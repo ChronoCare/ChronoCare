@@ -12,3 +12,28 @@ app/
 └── static/
 seed.py              # fake demo data for judging
 ```
+
+## Tech Stack
+
+**Backend**
+- Python + Flask (Blueprints)
+- Flask-SQLAlchemy (database ORM)
+- Flask-Login (authentication)
+- Flask-WTF (forms + CSRF protection)
+
+**Frontend**
+- Jinja2 templates
+- Tailwind CSS
+- HTMX (dynamic updates without page reloads)
+- Chart.js (blood sugar, BP, and sleep charts)
+
+**Database**
+- SQLite (local development)
+- PostgreSQL (production)
+
+**AI & Data**
+- Claude API (Anthropic): personalized meal, exercise, and sleep plans
+- USDA FoodData Central API: nutrition data
+
+**Deployment**
+- Render / Railway
