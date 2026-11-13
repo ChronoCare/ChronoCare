@@ -1,5 +1,5 @@
 # ChronoCare
 -----------------------
 # Team Members:
--> Hammad Zubair\n
+-> Hammad Zubair
 -> Adil Sajid
