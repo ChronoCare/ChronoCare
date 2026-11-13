@@ -23,8 +23,8 @@ seed.py              # fake demo data for judging
 
 **Frontend**
 - Jinja2 templates
-- Tailwind CSS
-- HTMX (dynamic updates without page reloads)
+- CSS
+- HTML
 - Chart.js (blood sugar, BP, and sleep charts)
 
 **Database**
