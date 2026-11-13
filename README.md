@@ -37,3 +37,62 @@ seed.py              # fake demo data for judging
 
 **Deployment**
 - Render / Railway
+
+-------------------------------
+## Getting Started
+
+### 1. Create a virtual environment
+```bash
+python -m venv venv
+```
+
+### 2. Activate it
+**Windows:**
+```bash
+venv\Scripts\activate
+```
+**Mac/Linux:**
+```bash
+source venv/bin/activate
+```
+You should see `(venv)` at the start of your terminal prompt.
+
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Set up environment variables
+Create a `.env` file in the project root:
+```
+SECRET_KEY=your-secret-key
+ANTHROPIC_API_KEY=your-api-key
+```
+> ⚠️ Never commit `.env`. It's already in `.gitignore`.
+
+### 5. Run the app
+```bash
+python run.py
+```
+Then open http://127.0.0.1:5000 in your browser.
+
+---
+
+## Adding New Packages
+
+1. Make sure your venv is activated (you see `(venv)` in your terminal).
+2. Install the package:
+   ```bash
+   pip install package-name
+   ```
+3. Update `requirements.txt`:
+   ```bash
+   pip freeze > requirements.txt
+   ```
+4. Commit `requirements.txt` **in the same PR** as the code that uses the package.
+
+### After pulling changes
+If `requirements.txt` changed, run this to stay in sync:
+```bash
+pip install -r requirements.txt
+```
