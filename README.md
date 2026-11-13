@@ -1,6 +1,6 @@
 # ChronoCare
 -----------------------
-'''
+```
 app/
 ├── __init__.py      # app factory
 ├── models.py        # User, Profile, Reading, Plan
@@ -11,4 +11,4 @@ app/
 ├── templates/
 └── static/
 seed.py              # fake demo data for judging
-'''
+```
