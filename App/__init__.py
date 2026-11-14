@@ -1,8 +1,8 @@
 import os
 from datetime import date
-from flask import Flask, render_template, redirect, url_for, request
+from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_required
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
 
@@ -24,8 +24,8 @@ def create_app():
     login_manager.init_app(app)
     csrf.init_app(app)
 
-    # Login and signup live in App/auth/__init__.py
-    from .auth import auth as auth_bp
+    # Login, signup and the profile forms live in App/auth/__init__.py
+    from .auth import auth as auth_bp, ChangePasswordForm
     app.register_blueprint(auth_bp)
 
     # Diet plan page and its API live in App/plans/routes.py
@@ -59,9 +59,18 @@ def create_app():
     def insights():
         return render_template("insights.html")
 
-    @app.route("/profile")
+    @app.route("/profile", methods=["GET", "POST"])
+    @login_required
     def profile():
-        return render_template("profile.html")
+        if current_user.profile is None:  # finish the About you page first
+            return redirect(url_for("auth.about_you"))
+        form = ChangePasswordForm()
+        if form.validate_on_submit():
+            current_user.set_password(form.new_password.data)
+            db.session.commit()
+            flash("Your password has been changed.", "ok")
+            return redirect(url_for("profile"))
+        return render_template("profile.html", form=form, profile=current_user.profile)
 
     @app.context_processor
     def inject_year():
