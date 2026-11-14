@@ -1,8 +1,71 @@
 {% extends "base.html" %}
-
-{%  block title %} Profile - ChronoCare {% endblock %}
+{% block title %}My profile · ChronoCare{% endblock %}
 
 {% block content %}
-<p> This is the Profile page</p>
+{% macro field(f) %}
+<div class="field {% if f.errors %}has-error{% endif %}">
+  {{ f.label }}
+  {{ f(**kwargs) }}
+  {% for e in f.errors %}<p class="error">{{ e }}</p>{% endfor %}
+</div>
+{% endmacro %}
 
+<div class="cc">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }}" role="status">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <section class="panel">
+    <h1>My profile</h1>
+    <p class="lead">Everything you told us when you signed up.</p>
+
+    <dl class="list">
+      <dt>Name</dt>
+      <dd>{{ profile.first_name }} {{ profile.last_name }}</dd>
+      <dt>Age</dt>
+      <dd>{{ profile.age }}</dd>
+      <dt>Height</dt>
+      <dd>{{ profile.height_cm|round(1) }} cm</dd>
+      <dt>Weight</dt>
+      <dd>{{ profile.weight_kg|round(1) }} kg</dd>
+      <dt>Sex</dt>
+      <dd>{{ profile.sex|pretty if profile.sex else "Not provided" }}</dd>
+      <dt>Ethnicity</dt>
+      <dd>{{ profile.ethnicity|pretty if profile.ethnicity else "Not provided" }}</dd>
+      <dt>Dietary restrictions</dt>
+      <dd>{{ (profile.dietary_restrictions or "").split(",")|select|map("pretty")|join(", ") or "None listed" }}</dd>
+      <dt>Diagnosed with</dt>
+      <dd>{{ (profile.diagnosed_conditions or "").split(",")|select|map("pretty")|join(", ") or "None listed" }}</dd>
+      <dt>Concerned about</dt>
+      <dd>{{ (profile.concerned_conditions or "").split(",")|select|map("pretty")|join(", ") or "None listed" }}</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Account</h2>
+    <dl class="list">
+      <dt>Email</dt>
+      <dd>{{ current_user.email }}</dd>
+      <dt>Password</dt>
+      <dd>********</dd>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2>Change password</h2>
+    <p class="hint">Enter your current password, then choose a new one of at least 8 characters.</p>
+
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="row three">
+        {{ field(form.current_password, autocomplete="current-password") }}
+        {{ field(form.new_password, autocomplete="new-password") }}
+        {{ field(form.confirm_password, autocomplete="new-password") }}
+      </div>
+      {{ form.submit(class="btn") }}
+    </form>
+  </section>
+</div>
 {% endblock %}

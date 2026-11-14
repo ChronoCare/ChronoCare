@@ -3,7 +3,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import (StringField, PasswordField, BooleanField, SubmitField,
                      IntegerField, FloatField, SelectField, SelectMultipleField, widgets)
-from wtforms.validators import DataRequired, Email, Length, NumberRange, ValidationError
+from wtforms.validators import (DataRequired, Email, EqualTo, Length,
+                                NumberRange, ValidationError)
 
 from .. import db
 from ..models import User, Profile
@@ -34,6 +35,16 @@ CONDITION_CHOICES = [
     ("prediabetes", "Prediabetes"), ("celiac", "Celiac disease"),
     ("iron_deficiency", "Iron deficiency"), ("hypertension", "High blood pressure"),
 ]
+
+# Readable names for stored codes, used by the "pretty" template filter
+LABELS = {code: label
+          for group in (SEX_CHOICES, ETHNICITY_CHOICES, DIET_CHOICES, CONDITION_CHOICES)
+          for code, label in group if code}
+
+
+@auth.app_template_filter("pretty")
+def pretty(code):
+    return LABELS.get(code, str(code).replace("_", " ").capitalize())
 
 
 # Forms
@@ -71,6 +82,22 @@ class AboutYouForm(FlaskForm):
     diagnosed = CheckboxField("Conditions I've been diagnosed with", choices=CONDITION_CHOICES)
     concerned = CheckboxField("Conditions I'm concerned about developing", choices=CONDITION_CHOICES)
     submit = SubmitField("Continue")
+
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField("Current password", validators=[DataRequired()])
+    new_password = PasswordField("New password", validators=[DataRequired(), Length(min=8, max=128)])
+    confirm_password = PasswordField("Confirm new password", validators=[
+        DataRequired(), EqualTo("new_password", message="Passwords don't match.")])
+    submit = SubmitField("Change password")
+
+    def validate_current_password(self, field):
+        if not current_user.check_password(field.data):
+            raise ValidationError("That isn't your current password.")
+
+    def validate_new_password(self, field):
+        if current_user.check_password(field.data):
+            raise ValidationError("Choose a password different from your current one.")
 
 
 # Helpers
