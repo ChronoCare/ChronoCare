@@ -29,7 +29,7 @@
         {% for e in form.password.errors %}<p class="error">{{ e }}</p>{% endfor %}
       </div>
 
-      <label class="inline">{{ form.remember() }} {{ form.remember_me.label.text }}</label>
+      <label class="inline">{{ form.remember_me() }} {{ form.remember_me.label.text }}</label>
 
       {{ form.submit(class="btn") }}
     </form>
