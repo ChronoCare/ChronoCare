@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+from datetime import date
 
 
 def create_app():
@@ -27,6 +28,10 @@ def create_app():
     @app.route("/profile")
     def profile():
         return render_template("profile.html")
+
+    @app.context_processor
+    def inject_year():
+        return {"now_year": date.today().year}
 
 
     return app
