@@ -187,4 +187,7 @@ Built by the ChronoCare team. See [Contributors](https://github.com/ChronoCare/C
 
 ## License
 
-[MIT](LICENSE) © 2026 ChronoCare
+Copyright (c) 2026 ChronoCare team. All rights reserved.
+
+This code is provided for viewing only. No permission is granted to copy,
+modify, distribute, or use it without written permission from the authors.
