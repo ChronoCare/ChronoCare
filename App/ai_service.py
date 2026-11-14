@@ -510,3 +510,128 @@ def _mock_workout_plan():
         "alternatives": [_mock_session(k) for k in ("nature", "stairs", "park", "chair", "stretch", "cycle", "swim", "body")],
         "checklist": ["Stretch for 5 minutes", "Take the stairs at least once", "Stand up and move every hour"],
     }
+
+# ------------------------------------------------------------- Sleep routines
+
+ROUTINE_CATEGORIES = ["Screens", "Relaxation", "Breathing", "Reading", "Stretching",
+                      "Journaling", "Environment", "Food & drink"]
+
+
+def howto_link(name):
+    return "https://www.google.com/search?q=" + quote_plus(f"{name} for better sleep")
+
+
+def clock(minutes):
+    """Minutes after midnight -> "10:15 pm"."""
+    minutes %= 24 * 60
+    hour, minute = divmod(minutes, 60)
+    return f"{hour % 12 or 12}:{minute:02d} {'am' if hour < 12 else 'pm'}"
+
+
+SLEEP_SYSTEM = """You are the sleep coach inside ChronoCare, a wellness app. You create a simple evening routine that helps someone fall asleep at their target bedtime.
+
+Rules:
+- Build 5 or 6 steps in time order over the 60 to 90 minutes before their target bedtime, ending at bedtime.
+- Use proven sleep habits: a steady schedule, screens away before bed, dim lights, a cool dark room, no caffeine late in the day, no heavy meals right before bed, and calming activities.
+- Use their recent sleep logs. If they sleep much less than their goal or go to bed late, start the routine earlier and make it more gradual.
+- Never suggest sleep medication, melatonin, alcohol or any other substance.
+- If their logs show very short sleep most nights, or they mention snoring, gasping or being exhausted all day, include a tip to talk to a doctor.
+- Adjust for health conditions, e.g. with diabetes, don't suggest sugary bedtime snacks.
+- Use these categories only: Screens, Relaxation, Breathing, Reading, Stretching, Journaling, Environment, Food & drink.
+- Write times like "10:15 pm".
+
+Respond with JSON only, in exactly this shape:
+{
+  "summary": "one or two sentences on how this routine supports their sleep goal",
+  "routine": [
+    {"time": "10:00 pm", "name": "Put your phone on charge outside the bedroom", "category": "Screens", "minutes": 5, "description": "under 15 words"}
+  ],
+  "alternatives": [],
+  "tips": []
+}
+"alternatives" must have 8 other calming bedtime activities in the same format with "time": "", covering at least 5 different categories.
+"tips" must have 3 short tips based on their sleep logs and goal."""
+
+
+def _clean_routine_item(item):
+    if not isinstance(item, dict) or not str(item.get("name", "")).strip():
+        return None
+    name = str(item["name"]).strip()[:120]
+    return {
+        "time": str(item.get("time", "")).strip()[:10],
+        "name": name,
+        "category": _pick(item.get("category"), ROUTINE_CATEGORIES, "Relaxation"),
+        "minutes": _num(item.get("minutes")),
+        "description": str(item.get("description", "")).strip()[:200],
+        "link": howto_link(name),
+    }
+
+
+def _clean_sleep_plan(raw):
+    """Check the AI's answer and fill in anything missing, so the page never breaks."""
+    raw = raw if isinstance(raw, dict) else {}
+    routine = [i for i in (_clean_routine_item(x) for x in (raw.get("routine") or [])) if i][:8]
+    if not routine:
+        raise AIError("The AI didn't return a bedtime routine. Please try again.")
+    alternatives = [i for i in (_clean_routine_item(x) for x in (raw.get("alternatives") or [])) if i]
+    for item in alternatives:
+        item["time"] = ""  # alternatives get the time of whatever they replace
+    return {
+        "summary": str(raw.get("summary", "")).strip()[:400],
+        "routine": routine,
+        "alternatives": alternatives,
+        "tips": _text_list(raw.get("tips"), 4),
+    }
+
+
+def generate_sleep_routine(profile, goal, recent, note=""):
+    """goal: {"hours": 8.0, "bedtime": "23:00", "note": ...}. recent: a sentence about the last 7 nights."""
+    if is_mock():
+        return _clean_sleep_plan(_mock_sleep_plan(goal["bedtime"]))
+
+    hour, minute = (int(x) for x in goal["bedtime"].split(":"))
+    prompt = (
+        "Create an evening routine for this person.\n\n"
+        + _profile_text(profile)
+        + f"\nSleep goal: {goal['hours']:g} hours a night, in bed by {clock(hour * 60 + minute)}"
+        + (f"\nWhat they want from better sleep: {goal['note']}" if goal.get("note") else "")
+        + f"\nRecent sleep: {recent}"
+    )
+    if note:
+        prompt += f"\n\nExtra request from the user: {note}"
+    return _clean_sleep_plan(_ask_json(SLEEP_SYSTEM, prompt, max_tokens=2500))
+
+
+_MOCK_ROUTINE = [  # (minutes before bedtime, name, category, minutes, description)
+    (90, "Finish eating for the day", "Food & drink", 5, "A light snack is fine, skip heavy meals."),
+    (60, "Put your phone on charge outside the bedroom", "Screens", 5, "Less scrolling makes it easier to wind down."),
+    (50, "Dim the lights and cool the room", "Environment", 5, "Aim for a dark room around 18 °C."),
+    (40, "Warm shower", "Relaxation", 15, "Your body cools down afterwards, which helps sleep."),
+    (20, "Read a paper book", "Reading", 15, "Something calm, not work."),
+    (5, "4-7-8 breathing", "Breathing", 5, "Breathe in for 4, hold for 7, out for 8. Repeat 4 times."),
+]
+_MOCK_ALTERNATIVES = [
+    ("Gentle bedtime stretches", "Stretching", 10, "Slow stretches for your neck, back and hips."),
+    ("Write tomorrow's to-do list", "Journaling", 5, "Get tomorrow out of your head and onto paper."),
+    ("Gratitude journal", "Journaling", 5, "Write three good things from today."),
+    ("Body scan meditation", "Relaxation", 10, "Relax each part of your body from toes to head."),
+    ("Box breathing", "Breathing", 5, "In 4, hold 4, out 4, hold 4."),
+    ("Turn on white noise or a fan", "Environment", 1, "Steady sound covers sudden noises."),
+    ("Caffeine-free herbal tea", "Food & drink", 5, "Chamomile or peppermint, not black or green tea."),
+    ("Listen to a calm audiobook", "Relaxation", 15, "Set a sleep timer so it switches off."),
+]
+
+
+def _mock_sleep_plan(bedtime):
+    hour, minute = (int(x) for x in bedtime.split(":"))
+    bed = hour * 60 + minute
+    return {
+        "summary": "A calm 90-minute wind-down that ends at your bedtime, so falling asleep gets easier.",
+        "routine": [{"time": clock(bed - before), "name": name, "category": category, "minutes": minutes,
+                     "description": description} for before, name, category, minutes, description in _MOCK_ROUTINE],
+        "alternatives": [{"time": "", "name": name, "category": category, "minutes": minutes, "description": description}
+                         for name, category, minutes, description in _MOCK_ALTERNATIVES],
+        "tips": ["Wake up at the same time every day, even on weekends.",
+                 "Avoid caffeine after 2 pm.",
+                 "Get some daylight soon after waking up."],
+    }

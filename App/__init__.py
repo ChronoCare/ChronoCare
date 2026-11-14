@@ -36,6 +36,11 @@ def create_app():
     from .plans.exercise import bp as exercise_bp
     app.register_blueprint(exercise_bp)
 
+    # Sleep page and its API live in App/plans/sleep.py
+    from .plans.sleep import bp as sleep_bp
+    app.register_blueprint(sleep_bp)
+
+
 
     @app.after_request
     def no_store_for_logged_in_pages(response):
@@ -50,10 +55,6 @@ def create_app():
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
         return render_template("index.html")
-
-    @app.route("/sleep")
-    def sleep():
-        return render_template("sleep.html")
 
     @app.route("/insights")
     def insights():

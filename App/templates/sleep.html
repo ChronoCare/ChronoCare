@@ -1,8 +1,167 @@
 {% extends "base.html" %}
 
-{%  block title %} Sleep - ChronoCare {% endblock %}
+{% block title %}Sleep · ChronoCare{% endblock %}
 
 {% block content %}
-<p> This is the Sleep page</p>
+{# Reuses the diet page layout and styles (.diet), plus a few sleep-only styles (.sleep) #}
+<div class="diet sleep">
 
+  <!-- Page heading -->
+  <div class="diet-head">
+    <div>
+      <p class="eyebrow">Sleep</p>
+      <h1>{{ profile.first_name }}'s sleep</h1>
+      <p class="muted" id="planSummary"></p>
+    </div>
+    <div class="diet-head-actions">
+      {% if mock_mode %}
+        <span class="badge" title="Add GROQ_API_KEY to your .env file for a real AI routine">Demo mode</span>
+      {% endif %}
+      <button type="button" class="btn btn-outline" data-open="regenModal">
+        <i data-lucide="refresh-cw"></i> New routine
+      </button>
+      <button type="button" class="btn" data-log-night="">
+        <i data-lucide="moon"></i> Log sleep
+      </button>
+    </div>
+  </div>
+
+  <div class="diet-grid">
+
+    <!-- Sleep: Day (one night) / Week -->
+    <section class="card schedule-card">
+      <div class="card-head">
+        <h2>Sleep</h2>
+        <div class="segmented">
+          <button type="button" class="seg active" data-view="day">Night</button>
+          <button type="button" class="seg" data-view="week">Week</button>
+        </div>
+      </div>
+      <div id="sleepBody"></div>
+    </section>
+
+    <!-- Sleep goal (separate from the diet / exercise goal) -->
+    <section class="card goal-card">
+      <div class="card-head"><h2>Sleep goal</h2></div>
+
+      {% if goal.set %}
+        <div id="goalView">
+          <p class="goal-text">{{ '%g'|format(goal.hours) }} hours a night, in bed by {{ goal_bedtime }}</p>
+          {% if goal.note %}<p class="muted small">"{{ goal.note }}"</p>{% endif %}
+          <p class="muted small">Set {{ goal.setOn }}</p>
+          <button type="button" class="btn btn-outline btn-sm" id="editGoalBtn">Update goal</button>
+        </div>
+      {% else %}
+        <p class="goal-empty">You haven't set a sleep goal yet. Most adults need 7 to 9 hours. Why not set one?</p>
+      {% endif %}
+
+      <form id="goalForm" class="goal-form" {% if goal.set %}hidden{% endif %}>
+        <div class="field-row">
+          <div>
+            <label for="goalHours" class="field-label">Hours a night</label>
+            <select id="goalHours" name="hours">
+              {% for h in hour_choices %}
+                <option value="{{ h }}" {% if h == goal.hours %}selected{% endif %}>{{ '%g'|format(h) }} hours</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="goalBedtime" class="field-label">In bed by</label>
+            <input id="goalBedtime" name="bedtime" type="time" value="{{ goal.bedtime }}" required>
+          </div>
+        </div>
+        <label for="goalNote" class="field-label">Why? <span class="optional">(optional)</span></label>
+        <textarea id="goalNote" name="note" rows="2" maxlength="300"
+                  placeholder="e.g. Stop waking up tired">{{ goal.note }}</textarea>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-sm">Save goal</button>
+          {% if goal.set %}<button type="button" class="btn-link" id="cancelGoalBtn">Cancel</button>{% endif %}
+        </div>
+      </form>
+
+      <!-- Tips from the AI routine -->
+      <div class="details" id="tipsBox" hidden>
+        <h3>Tips for you</h3>
+        <ul class="tips" id="tipsList"></ul>
+      </div>
+    </section>
+
+    <!-- Bedtime alternatives -->
+    <section class="card alts-card">
+      <div class="card-head"><h2>Bedtime alternatives</h2></div>
+      <div class="swap-banner" id="swapBanner" hidden></div>
+      <div class="alts-grid" id="altsBody"></div>
+    </section>
+
+    <!-- Tonight's routine (checklist) -->
+    <section class="card day-card">
+      <div class="card-head">
+        <h2>Tonight's routine</h2>
+        <span class="muted small">{{ today.strftime('%A, %b %d') }}</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="checkProgress"></div></div>
+      <p class="muted small" id="checkCount"></p>
+      <ul class="checklist" id="routine"></ul>
+    </section>
+  </div>
+
+  <!-- Log sleep modal -->
+  <dialog class="modal" id="logModal" aria-labelledby="logTitle">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <p class="eyebrow">Quick entry</p>
+    <h2 id="logTitle">Log sleep</h2>
+
+    <form id="logForm">
+      <label for="logNight">Night</label>
+      <select id="logNight" name="night"></select>
+
+      <div class="field-row">
+        <div>
+          <label for="logBedtime">Went to bed</label>
+          <input id="logBedtime" name="bedtime" type="time" required>
+        </div>
+        <div>
+          <label for="logWake">Woke up</label>
+          <input id="logWake" name="wake" type="time" required>
+        </div>
+      </div>
+      <p class="hours-preview" id="hoursPreview"></p>
+
+      <label for="logQuality">How well did you sleep? <span class="optional">(optional)</span></label>
+      <select id="logQuality" name="quality">
+        <option value="">Skip</option>
+        {% for value, label in quality.items()|reverse %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+
+      <label for="logNote">Notes <span class="optional">(optional)</span></label>
+      <textarea id="logNote" name="note" rows="2" maxlength="300" placeholder="e.g. Woke up twice, coffee at 5 pm"></textarea>
+
+      <p class="modal-error" id="logError" role="alert" hidden></p>
+      <button type="submit" class="btn btn-block">Save</button>
+    </form>
+  </dialog>
+
+  <!-- New routine modal -->
+  <dialog class="modal" id="regenModal" aria-labelledby="regenTitle">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <p class="eyebrow">Bedtime routine</p>
+    <h2 id="regenTitle">Make a new routine</h2>
+
+    <form id="regenForm">
+      <label for="regenNote">Anything you'd like changed? <span class="optional">(optional)</span></label>
+      <textarea id="regenNote" name="note" rows="3" maxlength="300"
+                placeholder="e.g. I share a room, so no lights or sounds. I work late on Tuesdays."></textarea>
+      <button type="submit" class="btn btn-block">Generate routine</button>
+    </form>
+    <p class="modal-foot">Built from your sleep goal and the nights you've logged.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script id="sleep-data" type="application/json">{{ page_data|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/sleep.js') }}"></script>
 {% endblock %}

@@ -883,3 +883,76 @@ body {
   font-size: 0.9rem;
 }
 .modal-error[hidden] { display: none; }
+
+/* ---------- Sleep page ----------
+   The page also uses the .diet styles above, so only the extras live here. */
+.sleep .diet-head-actions { flex-wrap: wrap; }
+
+/* Night chips: a dot under nights that have a log */
+.sleep .chip.logged { position: relative; }
+.sleep .chip.logged::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.sleep .chip.active.logged::after { background: #fff; }
+
+/* One night */
+.night-title { margin: 0; color: var(--muted); font-weight: 600; }
+.night-hours { margin: 4px 0; font-size: 2.4rem; font-weight: 700; letter-spacing: -1px; }
+.night-verdict { margin: 0 0 16px; font-weight: 600; }
+.night-verdict.good { color: var(--green); }
+.night-verdict.short { color: #a2482a; }
+.night-facts { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 0 0 12px; }
+.night-facts dt { color: var(--muted); font-size: 0.8rem; }
+.night-facts dd { margin: 2px 0 0; font-weight: 600; }
+
+/* Week stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
+.stat { display: grid; gap: 2px; padding: 12px 14px; border-radius: 12px; background: var(--mint-soft); }
+.stat span { color: var(--muted); font-size: 0.8rem; }
+.stat strong { font-size: 1.2rem; }
+.stat small { color: var(--muted); }
+
+/* Sleep goal form (outside a popup, so it needs its own field styles) */
+.sleep .field-label { display: block; margin: 12px 0 6px; color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.sleep .goal-form select,
+.sleep .goal-form input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.tips { margin: 6px 0 0; padding-left: 18px; color: var(--text); font-size: 0.9rem; }
+.tips li + li { margin-top: 4px; }
+
+/* Tonight's routine */
+.routine-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; border-radius: 10px; }
+.routine-row.swapping { background: var(--mint-soft); }
+.routine-time { display: block; color: var(--green); font-size: 0.8rem; font-weight: 700; }
+.routine-desc { display: block; color: var(--muted); }
+.check-item input:checked + span .routine-time,
+.check-item input:checked + span .routine-desc { text-decoration: line-through; }
+
+/* Log sleep popup */
+.hours-preview { margin: 10px 0 0; color: var(--green); font-weight: 600; min-height: 1.2em; }
+
+/* Routine category tags (base look comes from .slot-tag) */
+.rcat-screens { background: #e3f1fb; color: #1f5f86; }
+.rcat-relaxation { background: var(--mint); color: var(--green-dark); }
+.rcat-breathing { background: #e7f3f1; color: #2b6a61; }
+.rcat-reading { background: #fff1d6; color: #7a5a00; }
+.rcat-stretching { background: #ece6fb; color: #4d3a8f; }
+.rcat-journaling { background: #fde3ea; color: #9b2d4a; }
+.rcat-environment { background: #eef1f0; color: var(--muted); }
+.rcat-food-drink { background: #fde9df; color: #a2482a; }

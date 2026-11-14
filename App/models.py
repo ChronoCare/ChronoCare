@@ -91,6 +91,40 @@ class WorkoutPlan(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ---------- Sleep page ----------
+
+class SleepGoal(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    target_hours = db.Column(db.Float, nullable=False)    # e.g. 8.0
+    bedtime = db.Column(db.String(5), nullable=False)     # "23:00" (24-hour)
+    note = db.Column(db.String(300))                      # e.g. "Stop waking up tired"
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class SleepLog(db.Model):
+    """One night of sleep. `night` is the date of the evening you went to bed."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    night = db.Column(db.Date, nullable=False)
+    bedtime = db.Column(db.String(5), nullable=False)     # "23:15"
+    wake_time = db.Column(db.String(5), nullable=False)   # "06:45"
+    hours = db.Column(db.Float, nullable=False)           # worked out from the two times
+    quality = db.Column(db.Integer)                       # 1 (very poor) to 5 (great), optional
+    note = db.Column(db.String(300))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint("user_id", "night"),)  # one log per night
+
+
+class SleepPlan(db.Model):
+    """The AI's bedtime routine."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    data = db.Column(db.JSON, nullable=False)   # routine, alternatives, tips
+    note = db.Column(db.String(300))
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 @login_manager.user_loader
