@@ -214,6 +214,11 @@ button.dropdown-item {
   width: 100%;
   border: none;
   background: none;
+.dropdown form { margin: 0; }
+.dropdown button.dropdown-item {
+  width: 100%;
+  background: none;
+  border: 0;
   font: inherit;
   text-align: left;
   cursor: pointer;

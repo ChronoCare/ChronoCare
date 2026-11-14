@@ -33,6 +33,7 @@
                 <span class="brand-name">Chrono<span class="brand-accent">Care</span></span>
             </a>
 
+            {% if current_user.is_authenticated %}
             <!-- Main links -->
             <nav class="nav-links">
                 <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
@@ -61,11 +62,10 @@
                 </button>
                 <div class="profile-menu">
                     <button class="profile" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-                        <span class="avatar">UP{# Once profile is set up: {{ current_user.first_name[0] }}{{
-                            current_user.last_name[0] }} #}</span>
+                        {% set p = current_user.profile %}
+                        <span class="avatar">{% if p %}{{ p.first_name[0]|upper }}{{ p.last_name[0]|upper }}{% else %}UP{% endif %}</span>
                         <span class="profile-text">
-                            <strong>User Profile{# Once profile is set up: {{ current_user.first_name }} {{
-                                current_user.last_name }} #}</strong>
+                            <strong>{% if p %}{{ p.first_name }} {{ p.last_name }}{% else %}User Profile{% endif %}</strong>
                             <small>My profile</small>
                         </span>
                         <i data-lucide="chevron-down" class="chevron"></i>
@@ -76,11 +76,17 @@
                             <i data-lucide="user"></i> My profile
                         </a>
                         <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item danger"> {# change to url_for('logout') once it exists #}
-                            <i data-lucide="log-out"></i> Log out
-                        </a>
+                        <form method="post" action="{{ url_for('auth.logout') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="dropdown-item danger">
+                                <i data-lucide="log-out"></i> Log out
+                            </button>
+                        </form>
                     </div>
                 </div>
+            </div>
+            {% endif %}
+        </div>
     </header>
 
     <main class="container">
