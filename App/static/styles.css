@@ -209,11 +209,7 @@ body {
   margin: 6px 0;
 }
 
-/* Log out is a <button> inside a form, so reset button styles to match the links */
-button.dropdown-item {
-  width: 100%;
-  border: none;
-  background: none;
+
 .dropdown form { margin: 0; }
 .dropdown button.dropdown-item {
   width: 100%;
