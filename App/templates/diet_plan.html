@@ -1,8 +1,150 @@
 {% extends "base.html" %}
 
-{%  block title %} Meal Plan - ChronoCare {% endblock %}
+{% block title %}Diet plan · ChronoCare{% endblock %}
 
 {% block content %}
-<p> This is the diet plan page</p>
+<div class="diet">
 
+  <!-- Page heading -->
+  <div class="diet-head">
+    <div>
+      <p class="eyebrow">Diet plan</p>
+      <h1>{{ profile.first_name }}'s week of meals</h1>
+      <p class="muted" id="planSummary"></p>
+    </div>
+    <div class="diet-head-actions">
+      {% if mock_mode %}
+        <span class="badge" title="Add GROQ_API_KEY to your .env file for real AI plans">Demo mode</span>
+      {% endif %}
+      <button type="button" class="btn btn-outline" id="regenBtn">
+        <i data-lucide="refresh-cw"></i> New plan
+      </button>
+    </div>
+  </div>
+
+  <div class="diet-grid">
+
+    <!-- Schedule: Day / Week -->
+    <section class="card schedule-card">
+      <div class="card-head">
+        <h2>Schedule</h2>
+        <div class="segmented">
+          <button type="button" class="seg active" data-view="day">Day</button>
+          <button type="button" class="seg" data-view="week">Week</button>
+        </div>
+      </div>
+      <div id="scheduleBody"></div>
+    </section>
+
+    <!-- Goal + details -->
+    <section class="card goal-card">
+      <div class="card-head"><h2>Goal</h2></div>
+
+      {% if goal %}
+        <div id="goalView">
+          <p class="goal-text">{{ goal.text }}</p>
+          <p class="muted small">Set {{ goal.created_at.strftime('%b %d, %Y') }}</p>
+          <button type="button" class="btn btn-outline btn-sm" id="editGoalBtn">Update goal</button>
+        </div>
+      {% else %}
+        <p class="goal-empty">You haven't written a goal yet. Why not give it a try!</p>
+      {% endif %}
+
+      <form id="goalForm" class="goal-form" {% if goal %}hidden{% endif %}>
+        <label for="goalText" class="sr-only">Your goal</label>
+        <textarea id="goalText" rows="3" maxlength="500"
+                  placeholder="e.g. Lose 5 kg by summer and keep my energy up">{{ goal.text if goal else '' }}</textarea>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-sm">Save goal</button>
+          {% if goal %}<button type="button" class="btn-link" id="cancelGoalBtn">Cancel</button>{% endif %}
+        </div>
+      </form>
+
+      <!-- From the "About you" page -->
+      <div class="details">
+        <h3>Your plan is based on</h3>
+        <p class="muted small">
+          {{ profile.age }} yrs · {{ profile.height_cm|round|int }} cm · {{ profile.weight_kg|round(1) }} kg
+          {% if details.ethnicity %}· {{ details.ethnicity }}{% endif %}
+        </p>
+        {% if details.dietary_restrictions %}
+          <p class="muted small">Diet: {{ details.dietary_restrictions }}</p>
+        {% endif %}
+        {% if details.health_conditions %}
+          <p class="muted small">Health: {{ details.health_conditions }}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Meal alternatives -->
+    <section class="card alts-card">
+      <div class="card-head"><h2>Meal alternatives</h2></div>
+      <div class="swap-banner" id="swapBanner" hidden></div>
+      <div class="alts-grid" id="altsBody"></div>
+    </section>
+
+    <!-- Today's checklist -->
+    <section class="card day-card">
+      <div class="card-head">
+        <h2>Today</h2>
+        <span class="muted small">{{ today.strftime('%A, %b %d') }}</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="checkProgress"></div></div>
+      <p class="muted small" id="checkCount"></p>
+      <ul class="checklist" id="checklist"></ul>
+    </section>
+  </div>
+
+  <!-- Floating "Log symptom" button -->
+  <button type="button" class="fab" data-open="symptomModal">
+    <i data-lucide="stethoscope"></i> Log symptom
+  </button>
+
+  <!-- Log symptom modal -->
+  <dialog class="modal" id="symptomModal" aria-labelledby="symptomTitle">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <p class="eyebrow">Quick entry</p>
+    <h2 id="symptomTitle">Log a symptom</h2>
+
+    <form id="symptomForm">
+      <label for="symMetric">Type</label>
+      <select id="symMetric">
+        {% for metric in metrics %}<option>{{ metric }}</option>{% endfor %}
+      </select>
+
+      <label for="symReading">Reading <span class="optional">(optional)</span></label>
+      <input id="symReading" type="text" maxlength="50" placeholder="e.g. 4.2 mmol/L">
+
+      <label for="symDesc">How do you feel?</label>
+      <textarea id="symDesc" rows="3" maxlength="500" placeholder="e.g. Shaky and sweaty after skipping lunch"></textarea>
+
+      <button type="submit" class="btn btn-block">Get advice</button>
+    </form>
+
+    <div id="symptomResult" hidden></div>
+    <p class="modal-foot">This is not medical advice. In an emergency, call 911.</p>
+  </dialog>
+
+  <!-- New plan modal -->
+  <dialog class="modal" id="regenModal" aria-labelledby="regenTitle">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <p class="eyebrow">Meal plan</p>
+    <h2 id="regenTitle">Make a new plan</h2>
+
+    <form id="regenForm">
+      <label for="regenNote">Anything you'd like changed? <span class="optional">(optional)</span></label>
+      <textarea id="regenNote" rows="3" maxlength="300" placeholder="e.g. More vegetarian dinners, quicker breakfasts"></textarea>
+      <button type="submit" class="btn btn-block">Generate plan</button>
+    </form>
+    <p class="modal-foot">Your goal and details are used to build the plan.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script id="diet-data" type="application/json">{{ page_data|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/diet_plan.js') }}"></script>
 {% endblock %}

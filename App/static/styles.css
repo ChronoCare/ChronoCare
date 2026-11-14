@@ -209,6 +209,11 @@ body {
   margin: 6px 0;
 }
 
+/* Log out is a <button> inside a form, so reset button styles to match the links */
+button.dropdown-item {
+  width: 100%;
+  border: none;
+  background: none;
 .dropdown form { margin: 0; }
 .dropdown button.dropdown-item {
   width: 100%;
@@ -218,6 +223,7 @@ body {
   text-align: left;
   cursor: pointer;
 }
+
 /* Sign-up, log-in and onboarding pages.
    Uses the variables from style.css (--green, --mint, --border, --text, ...).
    Every rule is scoped under .cc so nothing leaks into the header or other pages. */
@@ -428,4 +434,400 @@ body {
 @media (max-width: 700px) {
   .footer-inner { padding: 24px 16px; }
   .footer-bottom { flex-direction: column; align-items: flex-start; }
+}
+
+/* ---------- Diet plan page ---------- */
+.diet {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 32px 96px;
+}
+
+.diet h1 { margin: 0 0 6px; font-size: 1.9rem; letter-spacing: -0.5px; }
+.diet h2 { margin: 0; font-size: 1.1rem; }
+.diet h3 { margin: 0; font-size: 0.95rem; }
+.diet .muted { color: var(--muted); margin: 0; }
+.diet .small { font-size: 0.85rem; }
+.diet .eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.diet .sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* Heading row */
+.diet-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.diet-head .muted { max-width: 70ch; }
+.diet-head-actions { display: flex; align-items: center; gap: 12px; }
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff4d6;
+  color: #7a5a00;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Buttons */
+.diet .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: 1px solid var(--green);
+  border-radius: 12px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.diet .btn:hover { background: var(--green-dark); }
+.diet .btn:disabled { opacity: 0.6; cursor: wait; }
+.diet .btn svg { width: 18px; height: 18px; }
+.diet .btn-outline { background: var(--bg); color: var(--green); }
+.diet .btn-outline:hover { background: var(--mint-soft); }
+.diet .btn-sm { padding: 7px 14px; font-size: 0.875rem; border-radius: 10px; }
+.diet .btn-block { width: 100%; margin-top: 20px; }
+.diet .btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--green);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.diet .btn-link:hover { text-decoration: underline; }
+
+/* Grid: matches the whiteboard layout */
+.diet-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+.schedule-card { grid-column: span 8; }
+.goal-card { grid-column: span 4; }
+.alts-card { grid-column: span 7; }
+.day-card { grid-column: span 5; }
+
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px;
+  min-width: 0;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Day / Week toggle */
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--mint-soft);
+}
+.seg {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg.active { background: var(--bg); color: var(--green); box-shadow: 0 1px 3px rgba(28, 43, 38, 0.12); }
+
+/* Day chips */
+.day-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--green); color: var(--green); }
+.chip.today { border-color: var(--green); }
+.chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* Day view */
+.day-layout {
+  display: grid;
+  grid-template-columns: 1fr 200px;
+  gap: 24px;
+  align-items: center;
+}
+.meal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.meal-row {
+  display: grid;
+  grid-template-columns: 92px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.meal-row.swapping { border-color: var(--green); background: var(--mint-soft); }
+.slot-tag {
+  justify-self: start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--mint);
+  color: var(--green-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.meal-main { min-width: 0; }
+.meal-main small { display: block; color: var(--muted); margin-top: 2px; }
+.meal-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.meal-name svg { width: 14px; height: 14px; color: var(--muted); }
+.meal-name:hover { color: var(--green); }
+.kcal { color: var(--muted); font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.swap-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--mint-soft);
+  color: var(--green);
+  cursor: pointer;
+}
+.swap-btn:hover, .meal-row.swapping .swap-btn { background: var(--green); color: #fff; }
+.swap-btn svg { width: 16px; height: 16px; }
+
+/* Macro donut */
+.macros { display: grid; gap: 14px; justify-items: center; }
+.donut { position: relative; width: 170px; height: 170px; }
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.donut-center strong { font-size: 1.6rem; line-height: 1; }
+.donut-center span { color: var(--muted); font-size: 0.8rem; }
+.macro-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.875rem; }
+.macro-legend li { display: flex; align-items: center; gap: 8px; }
+.macro-legend strong { margin-left: auto; padding-left: 12px; }
+.key { width: 10px; height: 10px; border-radius: 3px; }
+
+/* Week view */
+.week-chart { position: relative; height: 320px; margin-top: 12px; }
+
+/* Empty state */
+.empty { display: grid; justify-items: center; gap: 6px; padding: 40px 16px; text-align: center; }
+.empty p { margin: 0; }
+.empty svg { width: 36px; height: 36px; color: var(--green); }
+.empty .btn { margin-top: 12px; }
+
+/* Goal card */
+.goal-text {
+  margin: 0 0 6px;
+  padding-left: 12px;
+  border-left: 3px solid var(--green);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.goal-card .btn-outline { margin-top: 14px; }
+.goal-empty { margin: 0 0 12px; color: var(--muted); font-weight: 500; }
+.goal-form textarea, .modal input, .modal select, .modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+.goal-form textarea:focus, .modal input:focus, .modal select:focus, .modal textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--mint);
+}
+.form-actions { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.details { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+.details h3 { margin-bottom: 6px; }
+.details p + p { margin-top: 4px; }
+
+/* Alternatives */
+.alts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.alt-card {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.alt-card:hover { border-color: var(--green); box-shadow: 0 4px 14px rgba(28, 43, 38, 0.08); }
+.alt-name { color: var(--text); font-weight: 600; text-decoration: none; }
+.alt-name::after { content: ""; position: absolute; inset: 0; } /* whole card opens the recipe */
+.alt-card:hover .alt-name { color: var(--green); }
+.alt-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.alt-foot .btn { position: relative; z-index: 1; } /* button sits above the card link */
+.alt-card.match { border-color: var(--green); background: var(--mint-soft); }
+.alt-card.dim { opacity: 0.4; }
+.swap-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--mint-soft);
+  font-size: 0.9rem;
+}
+.swap-banner[hidden] { display: none; }
+
+/* Checklist */
+.progress { height: 8px; border-radius: 999px; background: var(--mint-soft); overflow: hidden; }
+.progress-bar { height: 100%; width: 0; background: var(--green); transition: width 0.3s; }
+.day-card .muted.small { margin: 8px 0 12px; }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.check-item:hover { background: var(--mint-soft); }
+.check-item input { width: 18px; height: 18px; accent-color: var(--green); flex-shrink: 0; }
+.check-item input:checked + span { color: var(--muted); text-decoration: line-through; }
+
+/* Floating "Log symptom" button */
+.fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(31, 122, 92, 0.35);
+  cursor: pointer;
+}
+.fab:hover { background: var(--green-dark); }
+.fab svg { width: 18px; height: 18px; }
+
+/* Modals (same style as the "Log health data" card) */
+.modal {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 32px;
+  border: none;
+  border-radius: 20px;
+  color: var(--text);
+  box-shadow: 0 20px 60px rgba(28, 43, 38, 0.25);
+}
+.modal::backdrop { background: rgba(28, 43, 38, 0.45); }
+.modal h2 { margin: 0 0 20px; font-size: 1.75rem; font-weight: 600; letter-spacing: -0.5px; }
+.modal label { display: block; margin: 16px 0 8px; color: var(--muted); font-weight: 600; }
+.modal .optional { font-weight: 400; }
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--mint-soft);
+  color: var(--muted);
+  cursor: pointer;
+}
+.modal-close:hover { background: var(--mint); color: var(--text); }
+.modal-close svg { width: 16px; height: 16px; }
+.modal-foot { margin: 16px 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Symptom advice */
+.advice { padding: 16px; border-radius: 14px; background: var(--mint-soft); }
+.advice.urgent { background: #fdecea; border: 1px solid #f5c2bb; }
+.advice-flag { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: var(--alert); font-weight: 700; }
+.advice-flag svg { width: 18px; height: 18px; }
+.advice-summary { margin: 0 0 8px; font-weight: 600; }
+.advice h4 { margin: 12px 0 4px; font-size: 0.85rem; color: var(--green-dark); }
+.advice.urgent h4 { color: var(--alert); }
+.advice ul { margin: 0; padding-left: 20px; }
+.advice li { margin: 2px 0; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 30;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--text);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+.toast[hidden] { display: none; }
+
+/* Smaller screens */
+@media (max-width: 1000px) {
+  .diet-grid > .card { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .diet { padding: 20px 16px 96px; }
+  .day-layout { grid-template-columns: 1fr; }
+  .meal-row { grid-template-columns: 1fr auto; }
+  .meal-row .slot-tag { grid-column: 1 / -1; }
+  .meal-row .kcal { display: none; }
+  .field-row { grid-template-columns: 1fr; }
 }

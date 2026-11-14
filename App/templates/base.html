@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}ChronoCare{% endblock %}</title>
 
+    <!-- Security token for JavaScript POST requests (CSRFProtect) -->
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+
     <!-- Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,10 +39,19 @@
                 <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
                     <i data-lucide="house"></i> Overview
                 </a>
-                <a href="{{ url_for('diet_plan') }}" class="nav-link"><i data-lucide="utensils"></i> Diet Plan </a>
-                <a href="{{ url_for('exercise') }}" class="nav-link"><i data-lucide="activity"></i> Exercise </a>
-                <a href="{{ url_for('sleep') }}" class="nav-link"><i data-lucide="moon"></i> Sleep </a>
-                <a href="{{ url_for('insights') }}" class="nav-link"><i data-lucide="chart-column"></i> Insights </a>
+                <a href="{{ url_for('plans.diet_plan') }}"
+                    class="nav-link {% if request.endpoint == 'plans.diet_plan' %}active{% endif %}"><i
+                        data-lucide="utensils"></i> Diet Plan </a>
+                <a href="{{ url_for('exercise') }}"
+                    class="nav-link {% if request.endpoint == 'exercise' %}active{% endif %}"><i
+                        data-lucide="activity"></i> Exercise </a>
+                <a href="{{ url_for('sleep') }}"
+                    class="nav-link {% if request.endpoint == 'sleep' %}active{% endif %}"><i data-lucide="moon"></i>
+                    Sleep </a>
+                <a href="{{ url_for('insights') }}"
+                    class="nav-link {% if request.endpoint == 'insights' %}active{% endif %}"><i
+                        data-lucide="chart-column"></i> Insights </a>
+
             </nav>
 
             <!-- Right side -->
@@ -82,46 +94,46 @@
     </main>
 
     <footer class="site-footer">
-  <div class="footer-inner">
+        <div class="footer-inner">
 
-    <!-- Medical disclaimer -->
-    <div class="disclaimer">
-      <i data-lucide="triangle-alert"></i>
-      <div>
-        <strong>ChronoCare is not medical advice.</strong>
-        <p>
-          The information and plans in this app are for general wellness tracking only and do not
-          replace a doctor, nurse, or other health professional. Always talk to your healthcare
-          provider before changing your diet, exercise, or medication.
-        </p>
-        <p>
-          <strong>If your blood pressure is 180/120 or higher</strong>, wait a few minutes and measure
-          again. If it is still that high, contact your doctor right away. If you also have chest pain,
-          shortness of breath, back pain, numbness or weakness, a change in vision, or trouble speaking,
-          <strong>call 911 or go to the nearest emergency room</strong>.
-        </p>
-      </div>
-    </div>
+            <!-- Medical disclaimer -->
+            <div class="disclaimer">
+                <i data-lucide="triangle-alert"></i>
+                <div>
+                    <strong>ChronoCare is not medical advice.</strong>
+                    <p>
+                        The information and plans in this app are for general wellness tracking only and do not
+                        replace a doctor, nurse, or other health professional. Always talk to your healthcare
+                        provider before changing your diet, exercise, or medication.
+                    </p>
+                    <p>
+                        <strong>If your blood pressure is 180/120 or higher</strong>, wait a few minutes and measure
+                        again. If it is still that high, contact your doctor right away. If you also have chest pain,
+                        shortness of breath, back pain, numbness or weakness, a change in vision, or trouble speaking,
+                        <strong>call 911 or go to the nearest emergency room</strong>.
+                    </p>
+                </div>
+            </div>
 
-    <!-- Bottom row -->
-    <div class="footer-bottom">
-      <div class="footer-brand">
-        <span class="brand-name">Chrono<span class="brand-accent">Care</span></span>
-        <small>Health made simple</small>
-      </div>
+            <!-- Bottom row -->
+            <div class="footer-bottom">
+                <div class="footer-brand">
+                    <span class="brand-name">Chrono<span class="brand-accent">Care</span></span>
+                    <small>Health made simple</small>
+                </div>
 
-      <div class="footer-contact">
-        <a href="mailto:support@ChronoCare.com"><i data-lucide="mail"></i> support@ChronoCare.com</a>
-        <a href="tel:+10000000000"><i data-lucide="phone"></i> (825) 333-1818</a>
-        <a href="https://github.com/ChronoCare/ChronoCare" target="_blank" rel="noopener">
-          <i data-lucide="github"></i> GitHub
-        </a>
-      </div>
+                <div class="footer-contact">
+                    <a href="mailto:support@ChronoCare.com"><i data-lucide="mail"></i> support@ChronoCare.com</a>
+                    <a href="tel:+10000000000"><i data-lucide="phone"></i> (825) 333-1818</a>
+                    <a href="https://github.com/ChronoCare/ChronoCare" target="_blank" rel="noopener">
+                        <i data-lucide="github"></i> GitHub
+                    </a>
+                </div>
 
-      <small class="copyright">&copy; {{ now_year }} ChronoCare. All rights reserved.</small>
-    </div>
-  </div>
-</footer>
+                <small class="copyright">&copy; {{ now_year }} ChronoCare. All rights reserved.</small>
+            </div>
+        </div>
+    </footer>
 
 
     <!-- Icons -->
