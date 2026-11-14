@@ -45,8 +45,8 @@
                 <a href="{{ url_for('exercise.exercise_plan') }}"
                     class="nav-link {% if request.endpoint == 'exercise.exercise_plan' %}active{% endif %}"><i
                         data-lucide="activity"></i> Exercise </a>
-                <a href="{{ url_for('sleep') }}"
-                    class="nav-link {% if request.endpoint == 'sleep' %}active{% endif %}"><i data-lucide="moon"></i>
+                <a href="{{ url_for('sleep.sleep_page') }}"
+                    class="nav-link {% if request.endpoint == 'sleep.sleep_page' %}active{% endif %}"><i data-lucide="moon"></i>
                     Sleep </a>
                 <a href="{{ url_for('insights') }}"
                     class="nav-link {% if request.endpoint == 'insights' %}active{% endif %}"><i
