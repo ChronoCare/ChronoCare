@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}ChronoCare{% endblock %}</title>
@@ -17,53 +18,70 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 
     {% block head_extra %}{% endblock %}
-  </head>
-  <body>
+</head>
+
+<body>
     <header class="navbar">
-      <div class="nav-inner">
-        <!-- Logo -->
-        <a href="{{ url_for('index') }}" class="brand">
-          <img src="{{ url_for('static', filename='images/image.png') }}" alt="ChronoCare logo" class="brand-logo" />
-          <span class="brand-name">Chrono<span class="brand-accent">Care</span></span>
-        </a>
+        <div class="nav-inner">
+            <!-- Logo -->
+            <a href="{{ url_for('index') }}" class="brand">
+                <img src="{{ url_for('static', filename='images/image.png') }}" alt="ChronoCare logo"
+                    class="brand-logo" />
+                <span class="brand-name">Chrono<span class="brand-accent">Care</span></span>
+            </a>
 
-        <!-- Main links -->
-        <nav class="nav-links">
-          <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
-            <i data-lucide="house"></i> Overview
-          </a>
-          <a href="#" class="nav-link"><i data-lucide="utensils"></i> Meal plan</a>
-          <a href="#" class="nav-link"><i data-lucide="activity"></i> Exercise</a>
-          <a href="#" class="nav-link"><i data-lucide="moon"></i> Sleep</a>
-          <a href="#" class="nav-link"><i data-lucide="chart-column"></i> Insights</a>
-        </nav>
+            <!-- Main links -->
+            <nav class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+                    <i data-lucide="house"></i> Overview
+                </a>
+                <a href="{{ url_for('diet_plan') }}" class="nav-link"><i data-lucide="utensils"></i> Diet Plan </a>
+                <a href="{{ url_for('exercise') }}" class="nav-link"><i data-lucide="activity"></i> Exercise </a>
+                <a href="{{ url_for('sleep') }}" class="nav-link"><i data-lucide="moon"></i> Sleep </a>
+                <a href="{{ url_for('insights') }}" class="nav-link"><i data-lucide="chart-column"></i> Insights </a>
+            </nav>
 
-        <!-- Right side -->
-        <div class="nav-right">
-          <button class="icon-btn" aria-label="Notifications">
-            <i data-lucide="bell"></i>
-            <span class="dot"></span>
-          </button>
-          <a href="#" class="profile">
-            <span class="avatar">MS</span>
-            <span class="profile-text">
-              <strong>Maya Singh</strong>
-              <small>My profile</small>
-            </span>
-            <i data-lucide="chevron-down" class="chevron"></i>
-          </a>
-        </div>
-      </div>
+            <!-- Right side -->
+            <div class="nav-right">
+                <button class="icon-btn" aria-label="Notifications">
+                    <i data-lucide="bell"></i>
+                    <span class="dot"></span>
+                </button>
+                <div class="profile-menu">
+                    <button class="profile" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+                        <span class="avatar">UP{# Once profile is set up: {{ current_user.first_name[0] }}{{
+                            current_user.last_name[0] }} #}</span>
+                        <span class="profile-text">
+                            <strong>User Profile{# Once profile is set up: {{ current_user.first_name }} {{
+                                current_user.last_name }} #}</strong>
+                            <small>My profile</small>
+                        </span>
+                        <i data-lucide="chevron-down" class="chevron"></i>
+                    </button>
+
+                    <div class="dropdown" id="profileDropdown">
+                        <a href="{{ url_for('profile') }}" class="dropdown-item">
+                            <i data-lucide="user"></i> My profile
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item danger"> {# change to url_for('logout') once it exists #}
+                            <i data-lucide="log-out"></i> Log out
+                        </a>
+                    </div>
+                </div>
     </header>
 
     <main class="container">
-      {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
     </main>
 
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
-    <script>lucide.createIcons();</script>
+
+    <!-- Site JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
     {% block scripts %}{% endblock %}
-  </body>
+</body>
+
 </html>
