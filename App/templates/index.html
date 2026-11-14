@@ -1,8 +1,146 @@
 {% extends "base.html" %}
 
-{%  block title %} Dashboard - ChronoCare {% endblock %}
+{% block title %}Overview · ChronoCare{% endblock %}
 
 {% block content %}
-<p> This is the Dashboard </p>
+{# Reuses the diet page styles (.diet: cards, buttons, popups) plus overview-only styles (.ov-...) #}
+<div class="diet overview">
 
+  <!-- Greeting -->
+  <div class="diet-head">
+    <div>
+      <p class="eyebrow" id="todayDate"></p>
+      <h1><span id="greeting">Hello</span>, {{ profile.first_name }}</h1>
+    </div>
+  </div>
+
+  <!-- Latest readings -->
+  <div class="ov-stats">
+    <section class="card ov-stat" data-card="sugar">
+      <div class="ov-stat-top">
+        <span class="ov-icon ov-icon-sugar"><i data-lucide="droplet"></i></span>
+        <button type="button" class="btn-link" data-log="blood_sugar">Log</button>
+      </div>
+      <p class="ov-stat-label">Blood sugar</p>
+      <div class="ov-stat-body"></div>
+    </section>
+
+    <section class="card ov-stat" data-card="pressure">
+      <div class="ov-stat-top">
+        <span class="ov-icon ov-icon-pressure"><i data-lucide="heart-pulse"></i></span>
+        <button type="button" class="btn-link" data-log="blood_pressure">Log</button>
+      </div>
+      <p class="ov-stat-label">Blood pressure</p>
+      <div class="ov-stat-body"></div>
+    </section>
+
+    <section class="card ov-stat" data-card="sleep">
+      <div class="ov-stat-top">
+        <span class="ov-icon ov-icon-sleep"><i data-lucide="moon"></i></span>
+        <a class="btn-link" href="{{ url_for('sleep.sleep_page') }}">Log</a>
+      </div>
+      <p class="ov-stat-label">Sleep</p>
+      <div class="ov-stat-body"></div>
+    </section>
+  </div>
+  <p class="muted small ov-score-note">
+    The ring shows how close your latest reading is to the usual healthy range (100% = in range).
+    It's a simple guide, not a medical measure.
+  </p>
+
+  <div class="ov-grid">
+    <!-- Today's plan -->
+    <section class="card ov-plan">
+      <p class="eyebrow">Your day</p>
+      <div class="card-head">
+        <h2>Today's plan</h2>
+        <span class="muted small" id="planCount"></span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="planProgress"></div></div>
+      <ul class="ov-items" id="planItems"></ul>
+    </section>
+
+    <div class="ov-side">
+      <!-- Consistency -->
+      <section class="card">
+        <p class="eyebrow">Consistency</p>
+        <div class="card-head">
+          <h2 id="weekTitle">This week</h2>
+          <div class="ov-week-nav">
+            <button type="button" class="ov-arrow" data-week="-1" aria-label="Previous week"><i data-lucide="chevron-left"></i></button>
+            <button type="button" class="ov-arrow" data-week="1" aria-label="Next week"><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="ov-days" id="weekDays"></div>
+        <div class="ov-week-summary">
+          <strong id="weekPercent">0%</strong>
+          <span id="weekText">of your plan completed this week</span>
+          <span class="ov-ring ov-ring-sm" id="weekRing"></span>
+        </div>
+      </section>
+
+      <!-- Care note -->
+      <section class="card ov-note">
+        <span class="ov-icon ov-icon-note"><i data-lucide="shield-check"></i></span>
+        <div>
+          <p class="eyebrow">Care note</p>
+          <h3>{{ note.title }}</h3>
+          <p class="small">{{ note.text }}</p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Up next -->
+  <section class="ov-next" id="upNext"></section>
+
+  <!-- Log health data -->
+  <button type="button" class="fab" data-log="blood_sugar">
+    <i data-lucide="plus"></i> Log health data
+  </button>
+
+  <dialog class="modal" id="readingModal" aria-labelledby="readingTitle">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <p class="eyebrow">Quick entry</p>
+    <h2 id="readingTitle">Log health data</h2>
+
+    <form id="readingForm">
+      <label for="metric">Metric</label>
+      <select id="metric" name="kind">
+        <option value="blood_sugar">Blood sugar</option>
+        <option value="blood_pressure">Blood pressure</option>
+      </select>
+
+      <label for="readingValue">Reading</label>
+      <div class="ov-reading-row">
+        <input id="readingValue" name="value" type="text" inputmode="decimal" autocomplete="off" placeholder="Enter value" required>
+        <select id="unit" name="unit" aria-label="Unit" data-sugar-only>
+          <option>mmol/L</option>
+          <option>mg/dL</option>
+        </select>
+      </div>
+
+      <div data-sugar-only>
+        <label for="timing">When</label>
+        <select id="timing" name="timing">
+          {% for value, label in sugar_timings.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <p class="modal-error" id="readingError" role="alert" hidden></p>
+      <button type="submit" class="btn btn-block">Save reading</button>
+    </form>
+
+    <div id="readingResult" hidden></div>
+    <p class="modal-foot">Your readings help ChronoCare tailor your plans. This is not medical advice.</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script id="overview-data" type="application/json">{{ page_data|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/overview.js') }}"></script>
 {% endblock %}

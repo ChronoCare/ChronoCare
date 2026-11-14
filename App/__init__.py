@@ -40,6 +40,9 @@ def create_app():
     from .plans.sleep import bp as sleep_bp
     app.register_blueprint(sleep_bp)
 
+    # Overview page (the "/" route below) and its API live in App/plans/overview.py
+    from .plans.overview import bp as overview_bp, render_overview
+    app.register_blueprint(overview_bp)
 
 
     @app.after_request
@@ -54,7 +57,7 @@ def create_app():
         # Logged-out visitors see the login page first
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
-        return render_template("index.html")
+        return render_overview()
 
     @app.route("/insights")
     def insights():

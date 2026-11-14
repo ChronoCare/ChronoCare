@@ -6,6 +6,7 @@ from flask_login import current_user, login_required
 
 from .. import ai_service, db
 from ..auth import CONDITION_CHOICES, DIET_CHOICES, ETHNICITY_CHOICES, SEX_CHOICES
+from .readings import ReadingError, make_reading
 from ..models import ChecklistCheck, Goal, MealPlan, SymptomLog
 
 bp = Blueprint("plans", __name__)
@@ -192,5 +193,15 @@ def log_symptom():
 
     db.session.add(SymptomLog(user_id=current_user.id, metric=metric, reading=reading or None,
                               description=description or None, advice=advice))
+    # A blood pressure or blood sugar number also counts as a reading, so the overview shows it
+    saved_reading = False
+    kind = {"Blood pressure": "blood_pressure", "Blood sugar": "blood_sugar"}.get(metric)
+    if kind and reading:
+        try:
+            db.session.add(make_reading(current_user.id, kind, reading))
+            saved_reading = True
+        except ReadingError:
+            pass  # e.g. "120" for blood pressure: still saved as a symptom, just not as a reading
+
     db.session.commit()
-    return jsonify(advice=advice)
+    return jsonify(advice=advice, savedReading=saved_reading)
