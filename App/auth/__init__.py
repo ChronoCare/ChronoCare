@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, session
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import (StringField, PasswordField, BooleanField, SubmitField,
@@ -61,6 +61,7 @@ class LoginForm(FlaskForm):
 
 class AboutYouForm(FlaskForm):
     first_name = StringField("First name", validators=[DataRequired(), Length(max=80)])
+    last_name = StringField("Last name", validators=[DataRequired(), Length(max=80)])
     age = IntegerField("Age", validators=[DataRequired(), NumberRange(min=1, max=120)])
     height_cm = FloatField("Height (cm)", validators=[DataRequired(), NumberRange(min=50, max=250)])
     weight_kg = FloatField("Weight (kg)", validators=[DataRequired(), NumberRange(min=20, max=350)])
@@ -121,6 +122,7 @@ def about_you():
         profile = Profile(
             user_id=current_user.id,
             first_name=form.first_name.data.strip(),
+            last_name=form.last_name.data.strip(),
             age=form.age.data,
             sex=form.sex.data or None,
             height_cm=form.height_cm.data,
@@ -139,5 +141,8 @@ def about_you():
 @auth.route("/logout", methods=["POST"])
 @login_required
 def logout():
-    logout_user()
-    return redirect(url_for("auth.login"))
+    session.clear()    # wipe everything stored in the browser session
+    logout_user()      # sign out and clear the "keep me logged in" cookie
+    response = redirect(url_for("auth.login"))
+    response.delete_cookie("remember_token")  # make sure that cookie is gone
+    return response
