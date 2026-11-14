@@ -126,6 +126,21 @@ class SleepPlan(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ---------- Overview page: health readings ----------
+
+class Reading(db.Model):
+    """One blood pressure or blood sugar reading."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    kind = db.Column(db.String(20), nullable=False)   # "blood_pressure" or "blood_sugar"
+    systolic = db.Column(db.Integer)                  # blood pressure: top number
+    diastolic = db.Column(db.Integer)                 # blood pressure: bottom number
+    sugar_mgdl = db.Column(db.Float)                  # blood sugar, always stored in mg/dL
+    unit = db.Column(db.String(10))                   # the unit they typed it in: "mg/dL" or "mmol/L"
+    timing = db.Column(db.String(20))                 # blood sugar: "fasting", "after_meal" or "random"
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 
 @login_manager.user_loader
 def load_user(user_id):

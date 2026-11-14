@@ -31,7 +31,7 @@
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
-    return data.advice;
+    return data;
   }
 
   // Errors show inside the popup: a toast on the page would be hidden behind it
@@ -40,7 +40,7 @@
     errorBox.hidden = !message;
   }
 
-  function renderAdvice(advice) {
+  function renderAdvice(advice, savedAs) {
     const section = (title, items) =>
       items?.length ? `<h4>${title}</h4><ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "";
 
@@ -54,6 +54,7 @@
         ${section("Get medical help if", advice.seek_help_if)}
         ${advice.demo ? `<p class="muted small">Demo answer. Add a Groq API key for personalised advice.</p>` : ""}
       </div>
+      ${savedAs ? `<p class="muted small">Also saved to your ${esc(savedAs.toLowerCase())} readings on the Overview.</p>` : ""}
       <button type="button" class="btn btn-outline btn-block" id="symptomAgain">Log another</button>`;
     form.hidden = true;
     result.hidden = false;
@@ -87,13 +88,13 @@
     button.textContent = "Thinking…";
     showError("");
     try {
-      const advice = await postSymptom({
+      const { advice, savedReading } = await postSymptom({
         metric: metricSelect.value,
         reading: document.getElementById("symReading").value,
         description: document.getElementById("symDesc").value,
         context: modal.dataset.context, // "exercise" on the exercise page
       });
-      renderAdvice(advice);
+      renderAdvice(advice, savedReading ? metricSelect.value : null);
     } catch (err) {
       showError(err.message);
     } finally {

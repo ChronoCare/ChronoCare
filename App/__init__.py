@@ -29,6 +29,11 @@ def create_app():
     app.register_blueprint(exercise_bp)
     from .plans.sleep import bp as sleep_bp           # sleep
     app.register_blueprint(sleep_bp)
+
+    # Overview page (the "/" route below) and its API live in App/plans/overview.py
+    from .plans.overview import bp as overview_bp, render_overview
+    app.register_blueprint(overview_bp)
+
     from .plans.insights import bp as insights_bp     # insights
     app.register_blueprint(insights_bp)
 
@@ -43,7 +48,7 @@ def create_app():
     def index():
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
-        return render_template("index.html")
+        return render_overview()
 
     @app.route("/profile", methods=["GET", "POST"])
     @login_required
