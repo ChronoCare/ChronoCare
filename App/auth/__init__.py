@@ -1,4 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, session
+import time
+from datetime import timedelta
+
+from flask import (Blueprint, render_template, redirect, url_for, session,
+                   request, flash, jsonify)
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf import FlaskForm
 from wtforms import (StringField, PasswordField, BooleanField, SubmitField,
@@ -11,7 +15,12 @@ from ..models import User, Profile
 
 auth = Blueprint("auth", __name__, url_prefix="/auth")
 
-# Choices for the About you page
+# Open pages ping the server every 20 seconds. If pings stop for this long,
+# the browser/tab was closed, so a login without "Keep me logged in" ends.
+CLOSED_AFTER_SECONDS = 3 * 60
+REMEMBER_DAYS = 30             # how long "Keep me logged in" lasts
+
+# Choices for the About you / Edit profile pages
 SEX_CHOICES = [("", "Prefer not to say"), ("female", "Female"),
                ("male", "Male"), ("intersex", "Intersex")]
 
@@ -30,6 +39,7 @@ DIET_CHOICES = [
     ("nut_allergy", "Nut allergy"), ("shellfish_allergy", "Shellfish allergy"),
 ]
 
+# To offer more conditions, add a line here, e.g. ("asthma", "Asthma")
 CONDITION_CHOICES = [
     ("type1", "Type 1 diabetes"), ("type2", "Type 2 diabetes"),
     ("prediabetes", "Prediabetes"), ("celiac", "Celiac disease"),
@@ -108,7 +118,57 @@ def next_page(user):
     return redirect(url_for("index"))
 
 
+def start_session(user, remember=False):
+    """Log in, and note whether the browser-closed check applies to this person."""
+    login_user(user, remember=remember, duration=timedelta(days=REMEMBER_DAYS))
+    session["remembered"] = bool(remember)
+    session["last_active"] = time.time()
+
+
+def split_codes(value):
+    """Turn the stored 'a,b,c' text back into a list for the checkboxes."""
+    return [c for c in (value or "").split(",") if c]
+
+
+def fill_profile(profile, form):
+    """Copy the form's answers onto a Profile row (used by sign-up and by edit)."""
+    profile.first_name = form.first_name.data.strip()
+    profile.last_name = form.last_name.data.strip()
+    profile.age = form.age.data
+    profile.sex = form.sex.data or None
+    profile.height_cm = form.height_cm.data
+    profile.weight_kg = form.weight_kg.data
+    profile.ethnicity = form.ethnicity.data or None
+    profile.dietary_restrictions = ",".join(form.dietary.data)
+    profile.diagnosed_conditions = ",".join(form.diagnosed.data)
+    profile.concerned_conditions = ",".join(form.concerned.data)
+
+
+@auth.before_app_request
+def end_closed_sessions():
+    """Without "Keep me logged in", sign out if no page has pinged for a while
+    (which means the browser or tab was closed)."""
+    if request.endpoint == "static" or not current_user.is_authenticated:
+        return None
+    if session.get("remembered") is False:
+        now = time.time()
+        if now - session.get("last_active", now) > CLOSED_AFTER_SECONDS:
+            session.clear()
+            logout_user()
+            response = redirect(url_for("auth.login"))
+            response.delete_cookie("remember_token")
+            return response
+        session["last_active"] = now
+    return None
+
+
 # Routes
+@auth.route("/ping")
+def ping():
+    """Heartbeat from open pages. Visiting it also refreshes last_active."""
+    return jsonify(signed_in=current_user.is_authenticated)
+
+
 @auth.route("/signup", methods=["GET", "POST"])
 def signup():
     if current_user.is_authenticated:
@@ -119,7 +179,7 @@ def signup():
         user.set_password(form.password.data)  # stored as a hash, never plain text
         db.session.add(user)
         db.session.commit()
-        login_user(user)
+        start_session(user)
         return next_page(user)
     return render_template("signup.html", form=form)
 
@@ -133,7 +193,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data.strip().lower()).first()
         if user and user.check_password(form.password.data):
-            login_user(user, remember=form.remember_me.data)
+            start_session(user, remember=form.remember_me.data)
             return next_page(user)
         error = "Incorrect email or password."
     return render_template("login.html", form=form, error=error)
@@ -146,23 +206,39 @@ def about_you():
         return redirect(url_for("index"))
     form = AboutYouForm()
     if form.validate_on_submit():
-        profile = Profile(
-            user_id=current_user.id,
-            first_name=form.first_name.data.strip(),
-            last_name=form.last_name.data.strip(),
-            age=form.age.data,
-            sex=form.sex.data or None,
-            height_cm=form.height_cm.data,
-            weight_kg=form.weight_kg.data,
-            ethnicity=form.ethnicity.data or None,
-            dietary_restrictions=",".join(form.dietary.data),
-            diagnosed_conditions=",".join(form.diagnosed.data),
-            concerned_conditions=",".join(form.concerned.data),
-        )
+        profile = Profile(user_id=current_user.id)
+        fill_profile(profile, form)
         db.session.add(profile)
         db.session.commit()
         return redirect(url_for("index"))  # will go to the readings page once it exists
     return render_template("about_you.html", form=form)
+
+
+@auth.route("/profile/edit", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    profile = current_user.profile
+    if profile is None:  # finish the About you page first
+        return redirect(url_for("auth.about_you"))
+    form = AboutYouForm()
+    form.submit.label.text = "Save changes"
+    if request.method == "GET":  # start with what is already saved
+        form.first_name.data = profile.first_name
+        form.last_name.data = profile.last_name
+        form.age.data = profile.age
+        form.height_cm.data = profile.height_cm
+        form.weight_kg.data = profile.weight_kg
+        form.sex.data = profile.sex or ""
+        form.ethnicity.data = profile.ethnicity or ""
+        form.dietary.data = split_codes(profile.dietary_restrictions)
+        form.diagnosed.data = split_codes(profile.diagnosed_conditions)
+        form.concerned.data = split_codes(profile.concerned_conditions)
+    if form.validate_on_submit():
+        fill_profile(profile, form)
+        db.session.commit()
+        flash("Your profile has been updated.", "ok")
+        return redirect(url_for("profile"))
+    return render_template("about_you.html", form=form, editing=True)
 
 
 @auth.route("/logout", methods=["POST"])

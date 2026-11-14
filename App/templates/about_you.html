@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}About you · ChronoCare{% endblock %}
+{% block title %}{% if editing %}Edit profile{% else %}About you{% endif %} · ChronoCare{% endblock %}
 
 {% block content %}
 {% macro field(f) %}
@@ -19,16 +19,23 @@
 {% endmacro %}
 
 <div class="cc">
+  {% if not editing %}
   <ol class="steps" aria-label="Sign-up progress">
     <li class="done">Account</li>
     <li aria-current="step">About you</li>
     <li>Readings</li>
     <li>Goals</li>
   </ol>
+  {% endif %}
 
   <section class="panel">
+    {% if editing %}
+    <h1>Edit profile</h1>
+    <p class="lead">Update any of your details, including your conditions. Changes apply to your future plans.</p>
+    {% else %}
     <h1>About you</h1>
     <p class="lead">This sets your starting point. Only name, age, height and weight are required.</p>
+    {% endif %}
 
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
@@ -67,6 +74,9 @@
       </fieldset>
 
       {{ form.submit(class="btn") }}
+      {% if editing %}
+      <p class="skip"><a class="link" href="{{ url_for('profile') }}">Cancel</a></p>
+      {% endif %}
     </form>
   </section>
 </div>

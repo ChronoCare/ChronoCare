@@ -41,6 +41,10 @@
       <dt>Concerned about</dt>
       <dd>{{ (profile.concerned_conditions or "").split(",")|select|map("pretty")|join(", ") or "None listed" }}</dd>
     </dl>
+
+    <form method="get" action="{{ url_for('auth.edit_profile') }}" class="skip">
+      <button class="btn" type="submit">Edit details</button>
+    </form>
   </section>
 
   <section class="panel">
