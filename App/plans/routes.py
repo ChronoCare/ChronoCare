@@ -11,7 +11,7 @@ from ..models import ChecklistCheck, Goal, MealPlan, SymptomLog
 bp = Blueprint("plans", __name__)
 
 DEFAULT_HABITS = ["Drink 8 glasses of water", "Take a 15-minute walk"]
-METRICS = ["Blood sugar", "Blood pressure", "Feeling weak", "Dizziness", "Headache", "Other"]
+METRICS = ["Blood sugar", "Blood pressure", "Feeling weak", "Dizziness", "Headache", "Muscle or joint pain", "Other"]
 
 
 # ------------------------------------------------------------------ Helpers
@@ -179,12 +179,14 @@ def log_symptom():
     metric = data.get("metric") if data.get("metric") in METRICS else "Other"
     reading = str(data.get("reading") or "").strip()[:50]
     description = str(data.get("description") or "").strip()[:500]
+    context = "exercise" if data.get("context") == "exercise" else ""  # which page it came from
+
     if not reading and not description:
         return error("Enter a reading or describe how you feel.")
 
     profile = profile_for_ai(current_user) if current_user.profile else {}
     try:
-        advice = ai_service.symptom_advice(metric, reading, description, profile)
+        advice = ai_service.symptom_advice(metric, reading, description, profile, context)
     except ai_service.AIError as e:
         return error(str(e), 502)
 

@@ -13,7 +13,6 @@ const DAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const SLOTS = ["Breakfast", "Lunch", "Dinner", "Snack"];
 const SLOT_COLORS = { Breakfast: "#f2b84b", Lunch: "#4fa483", Dinner: "#1f7a5c", Snack: "#a8d8c4" };
 const MACRO_COLORS = { Protein: "#1f7a5c", Carbs: "#f2b84b", Fat: "#e5885f" };
-const READING_HINTS = { "Blood sugar": "e.g. 4.2 mmol/L", "Blood pressure": "e.g. 145/95" };
 
 Chart.defaults.font.family = "Inter, system-ui, sans-serif";
 Chart.defaults.color = "#6b7a74";
@@ -335,56 +334,6 @@ goalForm.addEventListener("submit", (e) => {
   });
 });
 
-// ---------- Log symptom ----------
-
-const symptomForm = document.getElementById("symptomForm");
-const symptomResult = document.getElementById("symptomResult");
-const metricSelect = document.getElementById("symMetric");
-
-metricSelect.addEventListener("change", () => {
-  document.getElementById("symReading").placeholder = READING_HINTS[metricSelect.value] || "Optional";
-});
-
-function renderAdvice(advice) {
-  const section = (title, items) =>
-    items?.length ? `<h4>${title}</h4><ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "";
-
-  symptomResult.innerHTML = `
-    <div class="advice ${advice.urgent ? "urgent" : ""}">
-      ${advice.urgent ? `<p class="advice-flag"><i data-lucide="siren"></i> Get help now</p>` : ""}
-      <p class="advice-summary">${esc(advice.summary)}</p>
-      ${section("Do this now", advice.do_now)}
-      ${section("Eat or drink", advice.eat)}
-      ${section("Avoid", advice.avoid)}
-      ${section("Get medical help if", advice.seek_help_if)}
-      ${advice.demo ? `<p class="muted small">Demo answer. Add a Groq API key for personalised advice.</p>` : ""}
-    </div>
-    <button type="button" class="btn btn-outline btn-block" data-action="new-symptom">Log another</button>`;
-  symptomForm.hidden = true;
-  symptomResult.hidden = false;
-  lucide.createIcons();
-}
-
-symptomForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  withBusy(e.submitter, "Thinking…", async () => {
-    const { advice } = await api("/api/symptom", {
-      metric: metricSelect.value,
-      reading: document.getElementById("symReading").value,
-      description: document.getElementById("symDesc").value,
-    });
-    renderAdvice(advice);
-  });
-});
-
-function resetSymptomForm() {
-  symptomForm.reset();
-  symptomForm.hidden = false;
-  symptomResult.hidden = true;
-}
-
-document.getElementById("symptomModal").addEventListener("close", resetSymptomForm);
-
 // ---------- Clicks ----------
 
 document.addEventListener("click", async (e) => {
@@ -434,9 +383,7 @@ document.addEventListener("click", async (e) => {
     state.swap = null;
     renderSchedule();
     renderAlternatives();
-  } else if (action === "new-symptom") {
-    resetSymptomForm();
-  }
+  } 
 });
 
 // Esc cancels swap mode (dialogs close themselves on Esc)

@@ -81,6 +81,17 @@ class SymptomLog(db.Model):
     advice = db.Column(db.JSON)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+# ---------- Exercise page ----------
+
+class WorkoutPlan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    data = db.Column(db.JSON, nullable=False)   # days, sessions, alternatives, checklist, prefs
+    note = db.Column(db.String(300))            # what the user asked for when generating
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
 
 @login_manager.user_loader
 def load_user(user_id):

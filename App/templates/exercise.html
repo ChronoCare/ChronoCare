@@ -1,8 +1,135 @@
 {% extends "base.html" %}
 
-{%  block title %} Exercise - ChronoCare {% endblock %}
+{% block title %}Exercise · ChronoCare{% endblock %}
 
 {% block content %}
-<p> This is the Exercise page</p>
+{# Reuses the diet page layout and styles (.diet), plus a few exercise-only styles (.exercise) #}
+<div class="diet exercise">
 
+  <!-- Page heading -->
+  <div class="diet-head">
+    <div>
+      <p class="eyebrow">Exercise</p>
+      <h1>{{ profile.first_name }}'s week of workouts</h1>
+      <p class="muted" id="planSummary"></p>
+    </div>
+    <div class="diet-head-actions">
+      {% if mock_mode %}
+        <span class="badge" title="Add GROQ_API_KEY to your .env file for real AI plans">Demo mode</span>
+      {% endif %}
+      <button type="button" class="btn btn-outline" data-open="regenModal">
+        <i data-lucide="refresh-cw"></i> New plan
+      </button>
+    </div>
+  </div>
+
+  <div class="diet-grid">
+
+    <!-- Schedule: Day / Week -->
+    <section class="card schedule-card">
+      <div class="card-head">
+        <h2>Schedule</h2>
+        <div class="segmented">
+          <button type="button" class="seg active" data-view="day">Day</button>
+          <button type="button" class="seg" data-view="week">Week</button>
+        </div>
+      </div>
+      <div id="scheduleBody"></div>
+    </section>
+
+    <!-- Goal + details (the goal is shared with the diet page) -->
+    <section class="card goal-card">
+      <div class="card-head"><h2>Goal</h2></div>
+
+      {% if goal %}
+        <div id="goalView">
+          <p class="goal-text">{{ goal.text }}</p>
+          <p class="muted small">Set {{ goal.created_at.strftime('%b %d, %Y') }}</p>
+          <button type="button" class="btn btn-outline btn-sm" id="editGoalBtn">Update goal</button>
+        </div>
+      {% else %}
+        <p class="goal-empty">You haven't written a goal yet. Why not give it a try!</p>
+      {% endif %}
+
+      <form id="goalForm" class="goal-form" {% if goal %}hidden{% endif %}>
+        <label for="goalText" class="sr-only">Your goal</label>
+        <textarea id="goalText" rows="3" maxlength="500"
+                  placeholder="e.g. Walk 10,000 steps a day and get stronger">{{ goal.text if goal else '' }}</textarea>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-sm">Save goal</button>
+          {% if goal %}<button type="button" class="btn-link" id="cancelGoalBtn">Cancel</button>{% endif %}
+        </div>
+      </form>
+
+      <!-- From the "About you" page and the last New plan form -->
+      <div class="details">
+        <h3>Your plan is based on</h3>
+        <p class="muted small">
+          {{ profile.age }} yrs · {{ profile.height_cm|round|int }} cm · {{ profile.weight_kg|round(1) }} kg
+        </p>
+        <p class="muted small">{{ prefs.level }} · {{ prefs.equipment }} · about {{ prefs.minutes }} min a session</p>
+        {% if details.health_conditions %}
+          <p class="muted small">Health: {{ details.health_conditions }}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Workout alternatives -->
+    <section class="card alts-card">
+      <div class="card-head"><h2>Workout alternatives</h2></div>
+      <div class="swap-banner" id="swapBanner" hidden></div>
+      <div class="alts-grid" id="altsBody"></div>
+    </section>
+
+    <!-- Today's checklist -->
+    <section class="card day-card">
+      <div class="card-head">
+        <h2>Today</h2>
+        <span class="muted small">{{ today.strftime('%A, %b %d') }}</span>
+      </div>
+      <div class="progress"><div class="progress-bar" id="checkProgress"></div></div>
+      <p class="muted small" id="checkCount"></p>
+      <ul class="checklist" id="checklist"></ul>
+    </section>
+  </div>
+
+  <!-- New plan modal -->
+  <dialog class="modal" id="regenModal" aria-labelledby="regenTitle">
+    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
+    <p class="eyebrow">Workout plan</p>
+    <h2 id="regenTitle">Make a new plan</h2>
+
+    <form id="regenForm">
+      <label for="level">Fitness level</label>
+      <select id="level" name="level">
+        {% for option in levels %}<option {% if option == prefs.level %}selected{% endif %}>{{ option }}</option>{% endfor %}
+      </select>
+
+      <label for="equipment">Equipment</label>
+      <select id="equipment" name="equipment">
+        {% for option in equipment %}<option {% if option == prefs.equipment %}selected{% endif %}>{{ option }}</option>{% endfor %}
+      </select>
+
+      <label for="minutes">Session length</label>
+      <select id="minutes" name="minutes">
+        {% for option in minutes %}<option value="{{ option }}" {% if option == prefs.minutes %}selected{% endif %}>About {{ option }} minutes</option>{% endfor %}
+      </select>
+
+      <label for="regenNote">Anything else? <span class="optional">(optional)</span></label>
+      <textarea id="regenNote" name="note" rows="3" maxlength="300" placeholder="e.g. Bad knees, no running. Weekends free."></textarea>
+      <button type="submit" class="btn btn-block">Generate plan</button>
+    </form>
+    <p class="modal-foot">Check with your doctor before starting a new exercise routine.</p>
+  </dialog>
+
+  {% include "_symptom_modal.html" %}
+  <div class="toast" id="toast" role="status" hidden></div>
+</div>
+
+<script id="exercise-data" type="application/json">{{ page_data|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/exercise.js') }}"></script>
+<script src="{{ url_for('static', filename='js/symptom.js') }}"></script>
 {% endblock %}

@@ -100,30 +100,7 @@
     <i data-lucide="stethoscope"></i> Log symptom
   </button>
 
-  <!-- Log symptom modal -->
-  <dialog class="modal" id="symptomModal" aria-labelledby="symptomTitle">
-    <button type="button" class="modal-close" data-close aria-label="Close"><i data-lucide="x"></i></button>
-    <p class="eyebrow">Quick entry</p>
-    <h2 id="symptomTitle">Log a symptom</h2>
-
-    <form id="symptomForm">
-      <label for="symMetric">Type</label>
-      <select id="symMetric">
-        {% for metric in metrics %}<option>{{ metric }}</option>{% endfor %}
-      </select>
-
-      <label for="symReading">Reading <span class="optional">(optional)</span></label>
-      <input id="symReading" type="text" maxlength="50" placeholder="e.g. 4.2 mmol/L">
-
-      <label for="symDesc">How do you feel?</label>
-      <textarea id="symDesc" rows="3" maxlength="500" placeholder="e.g. Shaky and sweaty after skipping lunch"></textarea>
-
-      <button type="submit" class="btn btn-block">Get advice</button>
-    </form>
-
-    <div id="symptomResult" hidden></div>
-    <p class="modal-foot">This is not medical advice. In an emergency, call 911.</p>
-  </dialog>
+  {% include "_symptom_modal.html" %}
 
   <!-- New plan modal -->
   <dialog class="modal" id="regenModal" aria-labelledby="regenTitle">
@@ -147,4 +124,5 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/diet_plan.js') }}"></script>
+<script src="{{ url_for('static', filename='js/symptom.js') }}"></script>
 {% endblock %}

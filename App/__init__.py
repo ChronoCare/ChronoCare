@@ -32,6 +32,11 @@ def create_app():
     from .plans.routes import bp as plans_bp
     app.register_blueprint(plans_bp)
 
+    # Exercise page and its API live in App/plans/exercise.py
+    from .plans.exercise import bp as exercise_bp
+    app.register_blueprint(exercise_bp)
+
+
     @app.after_request
     def no_store_for_logged_in_pages(response):
         # Browsers won't keep a copy of private pages, so Back can't show them after logout
@@ -45,10 +50,6 @@ def create_app():
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
         return render_template("index.html")
-
-    @app.route("/exercise")
-    def exercise():
-        return render_template("exercise.html")
 
     @app.route("/sleep")
     def sleep():

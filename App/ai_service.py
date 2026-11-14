@@ -242,7 +242,7 @@ def _clean_advice(raw):
     }
 
 
-def symptom_advice(metric, reading, description, profile):
+def symptom_advice(metric, reading, description, profile, context = ""):
     urgent = urgent_check(metric, reading, description)
     if urgent:
         return urgent
@@ -255,6 +255,9 @@ def symptom_advice(metric, reading, description, profile):
         f"How they feel: {description or 'not given'}\n\n"
         f"About the user:\n{_profile_text(profile)}"
     )
+    if context == "exercise":
+        prompt += ("\n\nThey logged this from the exercise page, so it may have happened during or just after "
+                   "a workout. Say whether to stop, rest or carry on, and when it's safe to exercise again.")
     return _clean_advice(_ask_json(SYMPTOM_SYSTEM, prompt, max_tokens=1200))
 
 
@@ -342,3 +345,168 @@ def _mock_advice(metric):
     advice = dict(_MOCK_ADVICE.get(metric, _MOCK_DEFAULT))
     advice.update(urgent=False, demo=True)
     return advice
+
+# ------------------------------------------------------------- Workout plans
+
+CATEGORIES = ["Walking", "HIIT", "Calisthenics", "Strength", "Cardio",
+              "Low intensity", "Yoga & mobility", "Rest"]
+INTENSITIES = ["Low", "Moderate", "High"]
+
+
+def video_link(name):
+    # Like recipes: a search link always works, an AI-invented video URL often doesn't.
+    return "https://www.youtube.com/results?search_query=" + quote_plus(f"{name} workout how to")
+
+
+WORKOUT_SYSTEM = """You are the fitness coach inside ChronoCare, a wellness app. You create safe, realistic 7-day workout plans.
+
+Rules:
+- Match the plan to the person's goal, age, fitness level, available equipment and session length.
+- Aim for about 150 minutes of moderate activity a week (more only for intermediate or advanced people), spread across the week.
+- Include 1 or 2 rest or recovery days. Never put two high-intensity days in a row.
+- Beginners: mostly low and moderate intensity, simple moves, short sessions.
+- Adjust for health conditions. High blood pressure: avoid heavy lifting and holding your breath, prefer steady moderate cardio. Diabetes: remind them to check blood sugar before and after exercise and carry a fast-acting snack. Older adults (65+): include balance work.
+- Each session lists the actual moves, e.g. "3 x 12 bodyweight squats" or "5 min easy warm-up walk".
+- Use these categories only: Walking, HIIT, Calisthenics, Strength, Cardio, Low intensity, Yoga & mobility, Rest.
+- Use these intensities only: Low, Moderate, High.
+
+Respond with JSON only, in exactly this shape:
+{
+  "summary": "one or two sentences on how the plan supports the goal",
+  "weekly_minutes": 150,
+  "days": [
+    {"day": "Monday", "focus": "short label, e.g. Lower body", "sessions": [
+      {"name": "Session name", "category": "Calisthenics", "intensity": "Moderate", "duration_min": 30, "calories": 180,
+       "description": "under 15 words", "steps": ["3 x 12 bodyweight squats", "3 x 10 push-ups"]}
+    ]}
+  ],
+  "alternatives": [],
+  "checklist": []
+}
+"days" must have all 7 days, Monday to Sunday, each with 1 or 2 sessions. A rest day has one Rest or Yoga & mobility session, like gentle stretching.
+"alternatives" must have 8 sessions in the same format, covering different categories: at least one each of Walking, HIIT, Calisthenics, Low intensity and Yoga & mobility.
+"checklist" must have 3 short daily habits that support the goal, e.g. "Stretch for 5 minutes"."""
+
+
+def _pick(value, options, default):
+    """Match the AI's answer to one of our options, ignoring case."""
+    text = str(value or "").strip().lower()
+    for option in options:
+        if option.lower() == text:
+            return option
+    return default
+
+
+def _clean_session(session):
+    if not isinstance(session, dict) or not str(session.get("name", "")).strip():
+        return None
+    name = str(session["name"]).strip()[:120]
+    category = _pick(session.get("category"), CATEGORIES, "Low intensity")
+    return {
+        "name": name,
+        "category": category,
+        "intensity": _pick(session.get("intensity"), INTENSITIES, "Low" if category == "Rest" else "Moderate"),
+        "duration_min": _num(session.get("duration_min")),
+        "calories": _num(session.get("calories")),
+        "description": str(session.get("description", "")).strip()[:200],
+        "steps": _text_list(session.get("steps"), 6),
+        "video_url": video_link(name),
+    }
+
+
+def _rest_session():
+    return _clean_session({"name": "Rest and gentle stretching", "category": "Rest", "intensity": "Low",
+                           "duration_min": 10, "calories": 30, "description": "Let your body recover.",
+                           "steps": ["5 min easy walk", "5 min full-body stretch"]})
+
+
+def _clean_workout_plan(raw, prefs):
+    """Check the AI's answer and fill in anything missing, so the page never breaks."""
+    days_in = [d for d in (raw.get("days") or []) if isinstance(d, dict)] if isinstance(raw, dict) else []
+    if not days_in:
+        raise AIError("The AI didn't return a workout plan. Please try again.")
+
+    days = []
+    for i, day_name in enumerate(DAYS):
+        source = days_in[i % len(days_in)]
+        sessions = [s for s in (_clean_session(x) for x in (source.get("sessions") or [])) if s][:3]
+        days.append({
+            "day": day_name,
+            "focus": str(source.get("focus", "")).strip()[:60],
+            "sessions": sessions or [_rest_session()],  # an empty day becomes a rest day
+        })
+
+    alternatives = [_clean_session(s) for s in (raw.get("alternatives") or [])]
+    return {
+        "summary": str(raw.get("summary", "")).strip()[:400],
+        "weekly_minutes": _num(raw.get("weekly_minutes")),
+        "days": days,
+        "alternatives": [s for s in alternatives if s],
+        "checklist": _text_list(raw.get("checklist"), 4),
+        "prefs": prefs,
+    }
+
+
+def generate_workout_plan(profile, goal, prefs, note=""):
+    if is_mock():
+        return _clean_workout_plan(_mock_workout_plan(), prefs)
+
+    prompt = (
+        "Create a 7-day workout plan for this person.\n\n"
+        + _profile_text(profile, goal or "")
+        + f"\nFitness level: {prefs['level']}"
+        + f"\nEquipment: {prefs['equipment']}"
+        + f"\nPreferred session length: about {prefs['minutes']} minutes"
+    )
+    if note:
+        prompt += f"\n\nExtra request from the user: {note}"
+    return _clean_workout_plan(_ask_json(WORKOUT_SYSTEM, prompt, max_tokens=6000), prefs)
+
+
+_MOCK_SESSIONS = {
+    "walk": ("Brisk walk", "Walking", "Moderate", 30, 140, "A steady walk where talking is a little harder.",
+             ["5 min easy pace", "20 min brisk pace", "5 min easy cool-down"]),
+    "body": ("Bodyweight circuit", "Calisthenics", "Moderate", 30, 200, "Full-body moves, no equipment needed.",
+             ["3 x 12 squats", "3 x 8 push-ups (knees are fine)", "3 x 10 lunges each leg", "3 x 30 s plank"]),
+    "yoga": ("Yoga flow", "Yoga & mobility", "Low", 25, 90, "Gentle flow to loosen hips, back and shoulders.",
+             ["Cat-cow x 10", "Downward dog 5 breaths", "Low lunge each side", "Child's pose 1 min"]),
+    "hiit": ("20-minute HIIT", "HIIT", "High", 20, 220, "Short bursts with rest in between.",
+             ["5 min warm-up", "8 rounds: 30 s jumping jacks, 30 s rest", "5 min cool-down"]),
+    "strength": ("Full-body strength", "Strength", "Moderate", 40, 210, "Simple lifts with light dumbbells or bands.",
+                 ["3 x 10 goblet squats", "3 x 10 bent-over rows", "3 x 10 shoulder press", "3 x 12 glute bridges"]),
+    "rest": ("Rest and gentle stretching", "Rest", "Low", 10, 30, "Let your body recover.",
+             ["5 min easy walk", "5 min full-body stretch"]),
+    "cycle": ("Easy bike ride", "Cardio", "Moderate", 30, 210, "Steady pace on a bike or stationary bike.",
+              ["5 min easy", "20 min steady", "5 min easy"]),
+    "swim": ("Pool session", "Cardio", "Moderate", 30, 250, "Easy laps, rest at the wall when needed.",
+             ["10 min easy laps", "10 x 1 length, rest 30 s", "5 min easy"]),
+    "chair": ("Chair workout", "Low intensity", "Low", 20, 80, "Seated and standing moves using a chair.",
+              ["2 x 10 sit-to-stands", "2 x 10 seated knee lifts", "2 x 10 wall push-ups"]),
+    "stairs": ("Stair climb intervals", "HIIT", "High", 15, 150, "Climb fast, walk down slowly to recover.",
+               ["5 min warm-up", "6 rounds: climb 1 min, walk down", "4 min stretch"]),
+    "park": ("Park calisthenics", "Calisthenics", "Moderate", 30, 190, "Use benches and bars at a local park.",
+             ["3 x 10 bench dips", "3 x 10 step-ups each leg", "3 x 6 incline push-ups"]),
+    "stretch": ("Evening stretch", "Yoga & mobility", "Low", 15, 50, "Slow stretches before bed.",
+                ["Hamstring stretch 1 min each", "Hip flexor stretch 1 min each", "Neck rolls"]),
+    "nature": ("Nature walk", "Walking", "Low", 45, 160, "An easy, longer walk outside.",
+               ["Easy pace the whole way", "Stop and stretch halfway"]),
+}
+
+
+def _mock_session(key):
+    name, category, intensity, minutes, calories, description, steps = _MOCK_SESSIONS[key]
+    return {"name": name, "category": category, "intensity": intensity, "duration_min": minutes,
+            "calories": calories, "description": description, "steps": steps}
+
+
+def _mock_workout_plan():
+    week = [("Cardio", ["walk"]), ("Full body", ["body"]), ("Recovery", ["yoga"]), ("Intervals", ["hiit"]),
+            ("Easy day", ["walk", "stretch"]), ("Strength", ["strength"]), ("Rest", ["rest"])]
+    return {
+        "summary": "A balanced week with about 150 minutes of activity, mixing cardio, strength and recovery.",
+        "weekly_minutes": 150,
+        "days": [{"day": day, "focus": focus, "sessions": [_mock_session(k) for k in keys]}
+                 for day, (focus, keys) in zip(DAYS, week)],
+        "alternatives": [_mock_session(k) for k in ("nature", "stairs", "park", "chair", "stretch", "cycle", "swim", "body")],
+        "checklist": ["Stretch for 5 minutes", "Take the stairs at least once", "Stand up and move every hour"],
+    }
