@@ -25,6 +25,7 @@ class Profile(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), unique=True, nullable=False)
 
     first_name = db.Column(db.String(80), nullable=False)
+    last_name = db.Column(db.String(80), nullable=False)
     age = db.Column(db.Integer, nullable=False)
     sex = db.Column(db.String(20))                           # optional
     height_cm = db.Column(db.Float, nullable=False)

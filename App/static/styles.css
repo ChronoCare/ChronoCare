@@ -208,6 +208,16 @@ body {
   background: var(--border);
   margin: 6px 0;
 }
+
+.dropdown form { margin: 0; }
+.dropdown button.dropdown-item {
+  width: 100%;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
 /* Sign-up, log-in and onboarding pages.
    Uses the variables from style.css (--green, --mint, --border, --text, ...).
    Every rule is scoped under .cc so nothing leaks into the header or other pages. */

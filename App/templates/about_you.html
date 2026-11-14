@@ -37,14 +37,17 @@
         <legend>The basics</legend>
         <div class="row">
           {{ field(form.first_name, autocomplete="given-name") }}
-          {{ field(form.age, inputmode="numeric") }}
+          {{ field(form.last_name, autocomplete="family-name") }}
         </div>
         <div class="row three">
+          {{ field(form.age, inputmode="numeric") }}
           {{ field(form.height_cm, inputmode="decimal") }}
           {{ field(form.weight_kg, inputmode="decimal") }}
-          {{ field(form.sex) }}
         </div>
-        {{ field(form.ethnicity) }}
+        <div class="row">
+          {{ field(form.sex) }}
+          {{ field(form.ethnicity) }}
+        </div>
         <details>
           <summary>Why do we ask about ethnicity?</summary>
           <p>Some health risks differ between populations. For example, diabetes risk starts at a lower BMI for people of South Asian descent. We use this to put your numbers in the right context and to suggest foods that fit your cultural background. It's optional, and nothing changes if you skip it.</p>
