@@ -5,12 +5,14 @@ from flask import Blueprint, jsonify, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
 from .. import ai_service
-from ..models import (ChecklistCheck, Goal, MealPlan, SleepGoal, SleepLog,
-                      SleepPlan, SymptomLog, WorkoutPlan)
+from ..models import (ChecklistCheck, Goal, MealPlan, SleepGoal, SleepLog, SleepPlan, SymptomLog, WorkoutPlan)
 from . import exercise, sleep
+from .overview import reading_cards
+from .readings import MMOL_TO_MGDL, SUGAR_TIMINGS, ReadingError, make_reading
 from .routes import METRICS
 from .routes import build_checklist as diet_checklist
 from .routes import get_active_plan as diet_active_plan
+from ..models import (ChecklistCheck, Goal, MealPlan, Reading, SleepGoal, SleepLog, SleepPlan, SymptomLog, WorkoutPlan)
 
 bp = Blueprint("insights", __name__)
 
@@ -22,13 +24,17 @@ def stamp(moment):
     return moment.isoformat() + "Z"
 
 
-def latest_reading(user, metric):
-    log = (SymptomLog.query.filter_by(user_id=user.id, metric=metric)
-           .filter(SymptomLog.reading.isnot(None))
-           .order_by(SymptomLog.created_at.desc()).first())
-    if log is None:
-        return None
-    return {"reading": log.reading, "when": stamp(log.created_at)}
+def latest_readings(user):
+    """The same latest readings as the overview cards. Every popup saves them in the Reading table."""
+    cards = reading_cards(user)
+
+    def shape(card):
+        if card is None:
+            return None
+        return {"reading": f"{card['value']} {card['unit']}", "when": card["at"], "status": card["status"]}
+
+    return {"bp": shape(cards["pressure"]), "sugar": shape(cards["sugar"])}
+
 
 
 def diet_stats(user):
@@ -87,11 +93,32 @@ def history(user):
 
     add("goal", "Joined ChronoCare", stamp(user.created_at), user.created_at)
 
-    # Blood pressure, blood sugar and other symptoms from the Log symptom popup
-    kinds = {"Blood pressure": "bp", "Blood sugar": "sugar"}
+    # Blood pressure and blood sugar, from either popup (both save to the Reading table)
+    for r in Reading.query.filter_by(user_id=user.id):
+        if r.kind == "blood_pressure":
+            add("bp", "Blood pressure", stamp(r.created_at), r.created_at,
+                value=f"{r.systolic}/{r.diastolic} mmHg")
+        else:
+            shown = f"{r.sugar_mgdl / MMOL_TO_MGDL:.1f}" if r.unit == "mmol/L" else f"{r.sugar_mgdl:g}"
+            add("sugar", "Blood sugar", stamp(r.created_at), r.created_at,
+                value=f"{shown} {r.unit}", detail=SUGAR_TIMINGS.get(r.timing, ""))
+
+    # Symptoms from the Log symptom popup. A usable BP / sugar number is already listed
+    # above as a reading, so it isn't repeated here.
+    kinds = {"Blood pressure": "blood_pressure", "Blood sugar": "blood_sugar"}
     for log in SymptomLog.query.filter_by(user_id=user.id):
-        add(kinds.get(log.metric, "symptom"), log.metric, stamp(log.created_at), log.created_at,
-            value=log.reading or "", detail=log.description or "")
+        saved_as_reading = False
+        if log.metric in kinds and log.reading:
+            try:
+                make_reading(user.id, kinds[log.metric], log.reading)  # only checks it, doesn't save
+                saved_as_reading = True
+            except ReadingError:
+                pass
+        if saved_as_reading and not log.description:
+            continue  # just a number, already in the readings above
+        add("symptom", log.metric, stamp(log.created_at), log.created_at,
+            value="" if saved_as_reading else (log.reading or ""), detail=log.description or "")
+
 
     for log in SleepLog.query.filter_by(user_id=user.id):
         bits = [f"{log.bedtime} to {log.wake_time}"]
@@ -130,8 +157,7 @@ def history(user):
 
 def insights_data(user):
     return {
-        "bp": latest_reading(user, "Blood pressure"),
-        "sugar": latest_reading(user, "Blood sugar"),
+        **latest_readings(user),  # "bp" and "sugar"
         "diet": diet_stats(user),
         "exercise": exercise_stats(user),
         "sleep": sleep_summary(user),

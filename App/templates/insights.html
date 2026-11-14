@@ -109,6 +109,7 @@
     }
     var card = startCard(title);
     card.appendChild(el("div", "ins-big", reading.reading));
+    if (reading.status) card.appendChild(el("p", "small", reading.status));
     card.appendChild(el("p", "muted small", when(reading.when, false)));
     return card;
   }
