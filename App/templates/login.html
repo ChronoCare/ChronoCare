@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Log in · ChronoCare{% endblock %}
+
+{% block content %}
+<div class="cc">
+  <section class="panel narrow">
+    <h1>Welcome back</h1>
+    <p class="lead">Log in to see today's plan.</p>
+
+    <div class="tabs">
+      <a href="{{ url_for('auth.signup') }}">Sign up</a>
+      <a href="{{ url_for('auth.login') }}" aria-current="page">Log in</a>
+    </div>
+
+    {% if error %}<div class="flash error" role="alert">{{ error }}</div>{% endif %}
+
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="field {% if form.email.errors %}has-error{% endif %}">
+        {{ form.email.label }}
+        {{ form.email(autocomplete="email") }}
+        {% for e in form.email.errors %}<p class="error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="field {% if form.password.errors %}has-error{% endif %}">
+        {{ form.password.label }}
+        {{ form.password(autocomplete="current-password") }}
+        {% for e in form.password.errors %}<p class="error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <label class="inline">{{ form.remember() }} {{ form.remember.label.text }}</label>
+
+      {{ form.submit(class="btn") }}
+    </form>
+  </section>
+</div>
+{% endblock %}

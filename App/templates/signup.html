@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Sign up · ChronoCare{% endblock %}
+
+{% block content %}
+<div class="cc">
+  <section class="panel narrow">
+    <h1>Welcome to ChronoCare</h1>
+    <p class="lead">Create an account, then tell us a little about you so your meal and activity plans fit.</p>
+
+    <div class="tabs">
+      <a href="{{ url_for('auth.signup') }}" aria-current="page">Sign up</a>
+      <a href="{{ url_for('auth.login') }}">Log in</a>
+    </div>
+
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="field {% if form.email.errors %}has-error{% endif %}">
+        {{ form.email.label }}
+        {{ form.email(autocomplete="email") }}
+        {% for e in form.email.errors %}<p class="error">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="field {% if form.password.errors %}has-error{% endif %}">
+        {{ form.password.label }}
+        {{ form.password(autocomplete="new-password") }}
+        <p class="hint">At least 8 characters.</p>
+        {% for e in form.password.errors %}<p class="error">{{ e }}</p>{% endfor %}
+      </div>
+
+      {{ form.submit(class="btn") }}
+    </form>
+  </section>
+</div>
+{% endblock %}
