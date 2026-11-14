@@ -4,11 +4,14 @@ from flask import Flask, render_template, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from flask_wtf.csrf import CSRFProtect
+from dotenv import load_dotenv
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 login_manager.login_view = "auth.login"
+load_dotenv()  # reads GROQ_API_KEY, SECRET_KEY, ... from the .env file
+
 
 
 def create_app():
@@ -24,16 +27,17 @@ def create_app():
     from .auth import auth as auth_bp
     app.register_blueprint(auth_bp)
 
+    # Diet plan page and its API live in App/plans/routes.py
+    from .plans.routes import bp as plans_bp
+    app.register_blueprint(plans_bp)
+
+
     @app.route("/")
     def index():
         # Logged-out visitors see the login page first
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
         return render_template("index.html")
-
-    @app.route("/diet_plan")
-    def diet_plan():
-        return render_template("diet_plan.html")
 
     @app.route("/exercise")
     def exercise():
