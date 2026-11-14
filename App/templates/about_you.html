@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}About you · ChronoCare{% endblock %}
+
+{% block content %}
+{% macro field(f) %}
+<div class="field {% if f.errors %}has-error{% endif %}">
+  {{ f.label }}
+  {{ f(**kwargs) }}
+  {% for e in f.errors %}<p class="error">{{ e }}</p>{% endfor %}
+</div>
+{% endmacro %}
+
+{% macro checks(f) %}
+<div class="field {% if f.errors %}has-error{% endif %}">
+  <span class="label">{{ f.label.text }}</span>
+  {{ f(class="checks") }}
+  {% for e in f.errors %}<p class="error">{{ e }}</p>{% endfor %}
+</div>
+{% endmacro %}
+
+<div class="cc">
+  <ol class="steps" aria-label="Sign-up progress">
+    <li class="done">Account</li>
+    <li aria-current="step">About you</li>
+    <li>Readings</li>
+    <li>Goals</li>
+  </ol>
+
+  <section class="panel">
+    <h1>About you</h1>
+    <p class="lead">This sets your starting point. Only name, age, height and weight are required.</p>
+
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+
+      <fieldset>
+        <legend>The basics</legend>
+        <div class="row">
+          {{ field(form.first_name, autocomplete="given-name") }}
+          {{ field(form.age, inputmode="numeric") }}
+        </div>
+        <div class="row three">
+          {{ field(form.height_cm, inputmode="decimal") }}
+          {{ field(form.weight_kg, inputmode="decimal") }}
+          {{ field(form.sex) }}
+        </div>
+        {{ field(form.ethnicity) }}
+        <details>
+          <summary>Why do we ask about ethnicity?</summary>
+          <p>Some health risks differ between populations. For example, diabetes risk starts at a lower BMI for people of South Asian descent. We use this to put your numbers in the right context and to suggest foods that fit your cultural background. It's optional, and nothing changes if you skip it.</p>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Eating</legend>
+        {{ checks(form.dietary) }}
+      </fieldset>
+
+      <fieldset>
+        <legend>Health conditions</legend>
+        <p class="hint">Pick what applies. If you don't have a diagnosis but you're worried because of family history or something else, use the second list. Leave both blank if neither fits.</p>
+        {{ checks(form.diagnosed) }}
+        {{ checks(form.concerned) }}
+      </fieldset>
+
+      {{ form.submit(class="btn") }}
+    </form>
+  </section>
+</div>
+{% endblock %}
