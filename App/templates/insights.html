@@ -1,8 +1,243 @@
 {% extends "base.html" %}
-
-{%  block title %} Insights - ChronoCare {% endblock %}
+{% block title %}Insights · ChronoCare{% endblock %}
 
 {% block content %}
-<p> This is the Insights page</p>
+{# Reuses the diet page layout and styles (.diet), plus a few insights-only styles (.insights) #}
+<div class="diet insights" id="insights"
+     data-diet-url="{{ url_for('plans.diet_plan') }}"
+     data-exercise-url="{{ url_for('exercise.exercise_plan') }}"
+     data-sleep-url="{{ url_for('sleep.sleep_page') }}">
 
+  <!-- Page heading -->
+  <div class="diet-head">
+    <div>
+      <p class="eyebrow">Insights</p>
+      <h1>{{ profile.first_name }}'s health at a glance</h1>
+      <p class="muted">Your latest readings and today's progress, then everything you've recorded.</p>
+    </div>
+  </div>
+
+  <section aria-labelledby="snapTitle">
+    <h2 id="snapTitle">Right now</h2>
+    <div class="ins-grid" id="snapshot"></div>
+  </section>
+
+  <section aria-labelledby="historyTitle">
+    <h2 id="historyTitle">Everything you've logged</h2>
+    <div class="ins-filters" id="filters" role="group" aria-label="Filter history">
+      <button type="button" class="ins-chip" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="ins-chip" data-filter="bp" aria-pressed="false">Blood pressure</button>
+      <button type="button" class="ins-chip" data-filter="sugar" aria-pressed="false">Blood sugar</button>
+      <button type="button" class="ins-chip" data-filter="symptom" aria-pressed="false">Symptoms</button>
+      <button type="button" class="ins-chip" data-filter="sleep" aria-pressed="false">Sleep</button>
+      <button type="button" class="ins-chip" data-filter="checklist" aria-pressed="false">Checklists</button>
+      <button type="button" class="ins-chip" data-filter="goal" aria-pressed="false">Goals &amp; plans</button>
+    </div>
+    <p class="muted small" id="count"></p>
+    <ol class="ins-timeline" id="timeline"></ol>
+  </section>
+
+  {% include "_symptom_modal.html" %}
+</div>
+
+<script id="insights-data" type="application/json">{{ data|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/symptom.js') }}"></script>
+<script>
+(function () {
+  var root = document.getElementById("insights");
+  var data = JSON.parse(document.getElementById("insights-data").textContent);
+  var filter = "all";
+
+  // ---- small helpers (text is always set with textContent, never as HTML)
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function when(iso, allDay) {
+    var date = new Date(allDay ? iso + "T12:00:00" : iso);  // shown in the viewer's own time zone
+    var options = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
+    if (!allDay) { options.hour = "numeric"; options.minute = "2-digit"; }
+    return date.toLocaleString(undefined, options);
+  }
+
+  function row(label, value) {
+    var wrap = el("div", "ins-row");
+    wrap.appendChild(el("dt", "", label));
+    wrap.appendChild(el("dd", "", value));
+    return wrap;
+  }
+
+  function progress(done, total) {
+    var bar = el("div", "progress");
+    var fill = el("div", "progress-bar");
+    fill.style.width = (total ? Math.round(100 * done / total) : 0) + "%";
+    bar.appendChild(fill);
+    return bar;
+  }
+
+  function startCard(title) {
+    var card = el("article", "card");
+    var head = el("div", "card-head");
+    head.appendChild(el("h2", "", title));
+    card.appendChild(head);
+    return card;
+  }
+
+  function linkButton(text, url) {
+    var link = el("a", "btn btn-outline btn-sm", text);
+    link.href = url;
+    return link;
+  }
+
+  function emptyCard(title, message, linkText, url) {
+    var card = startCard(title);
+    card.appendChild(el("p", "muted small", message));
+    if (url) card.appendChild(linkButton(linkText, url));
+    return card;
+  }
+
+  // ---- the "Right now" cards
+  function readingCard(title, reading) {
+    if (!reading) {
+      return emptyCard(title, "No reading yet. Use Log symptom (bottom right) to add one.");
+    }
+    var card = startCard(title);
+    card.appendChild(el("div", "ins-big", reading.reading));
+    card.appendChild(el("p", "muted small", when(reading.when, false)));
+    return card;
+  }
+
+  function dietCard(d) {
+    if (!d.hasPlan) return emptyCard("Diet", "No meal plan yet.", "Create one", root.dataset.dietUrl);
+    var card = startCard("Diet");
+    card.appendChild(el("div", "ins-big", d.done + " / " + d.total));
+    card.appendChild(el("p", "muted small", "checklist items done today"));
+    card.appendChild(progress(d.done, d.total));
+    var dl = el("dl", "ins-rows");
+    dl.appendChild(row("Meals today", String(d.meals)));
+    if (d.calories) dl.appendChild(row("Calories planned", d.calories + " kcal"));
+    card.appendChild(dl);
+    if (d.goal) card.appendChild(el("p", "muted small ins-goal", "Goal: " + d.goal));
+    return card;
+  }
+
+  function exerciseCard(x) {
+    if (!x.hasPlan) return emptyCard("Exercise", "No workout plan yet.", "Create one", root.dataset.exerciseUrl);
+    var card = startCard("Exercise");
+    card.appendChild(el("div", "ins-big", x.sessions ? x.minutes + " min" : "Rest day"));
+    card.appendChild(el("p", "muted small", x.sessions ? "of exercise planned today" : "nothing planned today"));
+    card.appendChild(progress(x.done, x.total));
+    var dl = el("dl", "ins-rows");
+    dl.appendChild(row("Sessions today", String(x.sessions)));
+    dl.appendChild(row("Checklist", x.done + " / " + x.total));
+    if (x.level) dl.appendChild(row("Level", x.level));
+    card.appendChild(dl);
+    return card;
+  }
+
+  function sleepCard(s) {
+    var stats = s.stats;
+    var card = startCard("Sleep");
+    card.appendChild(el("div", "ins-big", stats.logged ? stats.average + " h" : "No sleep logged"));
+    card.appendChild(el("p", "muted small",
+      stats.logged ? "average over the last 7 nights" : "in the last 7 nights"));
+    if (s.routineTotal) card.appendChild(progress(s.routineDone, s.routineTotal));
+
+    var dl = el("dl", "ins-rows");
+    if (stats.logged) {
+      dl.appendChild(row("Nights logged", stats.logged + " / " + stats.nights));
+      dl.appendChild(row("Typical bedtime", stats.avgBedtime));
+      dl.appendChild(row("Best night", stats.best + " h (" + stats.bestLabel + ")"));
+      if (stats.avgQuality) dl.appendChild(row("Average quality", stats.avgQuality + " / 5"));
+    }
+    if (s.routineTotal) dl.appendChild(row("Tonight's routine", s.routineDone + " / " + s.routineTotal));
+    if (s.goal) dl.appendChild(row("Goal", s.goal.hours + " h, in bed by " + s.goal.bedtime));
+    card.appendChild(dl);
+    if (!stats.logged) card.appendChild(linkButton("Log sleep", root.dataset.sleepUrl));
+    return card;
+  }
+
+  function renderSnapshot() {
+    document.getElementById("snapshot").replaceChildren(
+      readingCard("Blood pressure", data.bp),
+      readingCard("Blood sugar", data.sugar),
+      dietCard(data.diet),
+      exerciseCard(data.exercise),
+      sleepCard(data.sleep)
+    );
+  }
+
+  // ---- the full history
+  function renderTimeline() {
+    var list = document.getElementById("timeline");
+    var items = data.history.filter(function (e) { return filter === "all" || e.kind === filter; });
+    document.getElementById("count").textContent = items.length + (items.length === 1 ? " entry" : " entries");
+    list.replaceChildren();
+
+    if (!items.length) {
+      list.appendChild(el("li", "ins-empty", "Nothing here yet. Use Log symptom (bottom right) to add your first entry."));
+      return;
+    }
+    items.forEach(function (e) {
+      var item = el("li", "event kind-" + e.kind);
+      var top = el("div", "event-top");
+      top.appendChild(el("strong", "", e.title));
+      if (e.value) top.appendChild(el("span", "ins-value", e.value));
+      item.appendChild(top);
+      if (e.detail) item.appendChild(el("p", "event-detail", e.detail));
+      item.appendChild(el("p", "muted small", when(e.when, e.allDay)));
+      list.appendChild(item);
+    });
+  }
+
+  function render() {
+    renderSnapshot();
+    renderTimeline();
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  document.getElementById("filters").addEventListener("click", function (event) {
+    var chip = event.target.closest("[data-filter]");
+    if (!chip) return;
+    filter = chip.dataset.filter;
+    document.querySelectorAll("#filters .ins-chip").forEach(function (c) {
+      c.setAttribute("aria-pressed", String(c === chip));
+    });
+    renderTimeline();
+  });
+
+  // ---- refresh when something new is logged
+  var originalFetch = window.fetch.bind(window);
+
+  function refresh() {
+    return originalFetch("/api/insights", { credentials: "same-origin", cache: "no-store" })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (fresh) { if (fresh) { data = fresh; render(); } })
+      .catch(function () {});
+  }
+
+  // Watch saves made by the Log symptom popup (and any other logging on this page)
+  window.fetch = function (input, init) {
+    var promise = originalFetch(input, init);
+    var url = typeof input === "string" ? input : (input && input.url) || "";
+    var method = ((init && init.method) || (input && input.method) || "GET").toUpperCase();
+    if (method === "POST" && /\/api\/(symptom|sleep\/log|checklist)/.test(url)) {
+      promise.then(function (response) { if (response.ok) refresh(); }).catch(function () {});
+    }
+    return promise;
+  };
+
+  // Backup: refresh when the popup is closed
+  var modal = document.getElementById("symptomModal");
+  if (modal) modal.addEventListener("close", refresh);
+
+  render();
+})();
+</script>
 {% endblock %}
